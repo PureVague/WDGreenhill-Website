@@ -6,6 +6,8 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { CustomCursor } from "@/components/motion/CustomCursor";
 import { CartFlyOverlay } from "@/components/motion/CartFlyOverlay";
+import { AmbientPlayerProvider } from "@/components/audio/ambient-player.context";
+import { PlayerMount } from "@/components/audio/PlayerMount";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -112,13 +114,16 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[hsl(50,20%,98%)]">
-        <SmoothScroll>
-          <CustomCursor />
-          <CartFlyOverlay />
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-        </SmoothScroll>
+        <AmbientPlayerProvider>
+          <SmoothScroll>
+            <CustomCursor />
+            <CartFlyOverlay />
+            <SiteHeader />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+            <PlayerMount />
+          </SmoothScroll>
+        </AmbientPlayerProvider>
       </body>
     </html>
   );

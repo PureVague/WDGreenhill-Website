@@ -25,6 +25,7 @@ const COMPANY_LINKS = [
   { label: "Contact Us", href: "/contact" },
   { label: "Terms & Conditions", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Music Credits", href: "/credits" },
 ];
 
 const FEATURED_BRANDS = ["Hammond", "Kawai", "Yamaha", "Roland", "Fender Rhodes", "Wurlitzer", "Technics", "Korg", "Kurzweil", "Leslie"];

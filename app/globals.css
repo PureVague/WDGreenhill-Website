@@ -142,3 +142,23 @@ body {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--color-muted); }
 ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 3px; }
+
+/* Volume slider thumb */
+.volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: hsl(38, 93%, 50%);
+  cursor: pointer;
+  border: 2px solid hsl(240, 10%, 8%);
+  box-shadow: 0 0 0 1px hsl(38, 93%, 50%);
+}
+.volume-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: hsl(38, 93%, 50%);
+  cursor: pointer;
+  border: 2px solid hsl(240, 10%, 8%);
+}
