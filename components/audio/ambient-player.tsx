@@ -53,14 +53,16 @@ export function AmbientPlayer() {
       className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3"
       aria-label="Background music player"
     >
+      {/* Pointer-events wrapper: immediately inert when panel is closing so the
+          exit-animation panel can't intercept clicks meant for the toggle button */}
+      <div style={{ pointerEvents: open ? "auto" : "none" }}>
       <AnimatePresence>
         {open && (
           <motion.div
             key="panel"
             initial={{ opacity: 0, y: 16, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            animate={{ opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 30 } }}
+            exit={{ opacity: 0, y: 8, scale: 0.97, transition: { type: "tween", duration: 0.15, ease: "easeIn" } }}
             className={cn(
               "w-80 rounded-2xl border border-[hsl(240,6%,20%)] shadow-2xl",
               "bg-[hsl(240,10%,8%)] text-white overflow-hidden",
@@ -194,13 +196,14 @@ export function AmbientPlayer() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
 
       {/* Trigger button */}
       <div className="relative">
-        {/* Pulsing ring when playing */}
+        {/* Pulsing ring when playing — pointer-events-none so it never intercepts button clicks */}
         {!reduced && playing && !muted && (
           <motion.div
-            className="absolute inset-0 rounded-full border-2 border-[hsl(245,85%,58%)]"
+            className="absolute inset-0 rounded-full border-2 border-[hsl(245,85%,58%)] pointer-events-none"
             animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0, 0.6] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           />
