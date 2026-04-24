@@ -1,51 +1,56 @@
 /**
- * Piano keyboard layout builder.
+ * Piano keyboard layout builder — anatomically accurate 88-key layout.
  *
- * Generates the correct 88-key layout (or any subset) with proper
- * black-key positions using the standard chromatic/diatonic pattern.
- *
- * Keyboard starts at A0 (MIDI 21) and ends at C8 (MIDI 108).
+ * Key insight: black key offsets are measured from the GAP between two
+ * adjacent white keys (≈ 1.0 × whiteWidth from the lower key's left edge),
+ * not from the midpoint of a single white key. Offsets near 1.0 place the
+ * key AT the gap; values like 0.92 shift it slightly toward the lower note.
  */
 
-export type WhiteKey = {
-  type: "white";
-  midiNote: number;
-  noteName: string;  // e.g. "C4"
-  whiteIndex: number; // 0-based position among white keys
-  x: number;
-  width: number;
-  height: number;
-};
+// ─── Geometry constants ──────────────────────────────────────────────────────
+// All proportions relative to one white-key width (= 1.0)
+export const KEY_GEOMETRY = {
+  whiteKeyHeightRatio: 5.5,        // white key height = 5.5 × white key width
+  blackKeyWidthRatio:  0.58,       // ~58% of white key width
+  blackKeyHeightRatio: 3.48,       // ~63% of white key height (3.48/5.5 ≈ 0.633)
+  whiteKeyCornerRadius: 2,         // px — subtle rounding on bottom corners only
+  blackKeyCornerRadius: 1.5,       // px — subtle rounding on bottom corners only
 
-export type BlackKey = {
-  type: "black";
+  // Horizontal offset of each black key from the gap between its two whites.
+  // The "gap" is at (prevWhiteIndex + 1) × whiteWidth from the keyboard left.
+  // Positive = shifted toward higher note, negative = toward lower note.
+  // Unit: white-key widths.
+  blackKeySpecOffsets: {
+    1:  -0.08,   // C# — slightly toward C
+    3:  +0.08,   // D# — slightly toward E
+    6:  -0.10,   // F# — slightly toward F
+    8:   0.00,   // G# — centred between G and A
+    10: +0.10,   // A# — slightly toward B
+  } as Record<number, number>,
+} as const;
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+export type KeyData = {
   midiNote: number;
-  noteName: string;
+  noteName: string;   // e.g. "C4", "F#4"
+  octave: number;
+  isWhite: boolean;
   x: number;
   width: number;
   height: number;
 };
 
 export type KeyboardLayout = {
-  whites: WhiteKey[];
-  blacks: BlackKey[];
+  whites: KeyData[];
+  blacks: KeyData[];
   totalWidth: number;
+  whiteWidth: number;
+  whiteHeight: number;
 };
 
-// Chromatic scale: which semitones are white keys (0=C,2=D,4=E,5=F,7=G,9=A,11=B)
+// ─── Note name helpers ───────────────────────────────────────────────────────
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"] as const;
 const WHITE_SEMITONES = new Set([0, 2, 4, 5, 7, 9, 11]);
-const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-
-// Black key offsets within each octave group (fraction of white key width from left of previous white)
-// C#=between C&D, D#=between D&E, F#=between F&G, G#=between G&A, A#=between A&B
-// These are the centroid positions as fraction of white-key width
-const BLACK_KEY_OFFSETS: Record<number, number> = {
-  1:  0.67,  // C# — 2/3 right of C
-  3:  0.33,  // D# — 1/3 right of D (from left of D's right edge)
-  6:  0.67,  // F#
-  8:  0.50,  // G#
-  10: 0.33,  // A#
-};
 
 function midiToNoteName(midi: number): string {
   const octave = Math.floor(midi / 12) - 1;
@@ -53,58 +58,60 @@ function midiToNoteName(midi: number): string {
   return `${NOTE_NAMES[semitone]}${octave}`;
 }
 
+// ─── Builder ─────────────────────────────────────────────────────────────────
 /**
- * Build keyboard layout.
+ * Build an accurate piano keyboard layout.
  *
- * @param startMidi  First MIDI note (default 21 = A0)
- * @param endMidi    Last MIDI note (default 108 = C8)
- * @param whiteWidth Width of each white key in px
- * @param whiteHeight Height of white keys
- * @param blackWidthRatio  Black key width as fraction of white key width (default 0.6)
- * @param blackHeightRatio Black key height as fraction of white key height (default 0.62)
+ * @param startMidi  First MIDI note (21 = A0 for full 88-key)
+ * @param endMidi    Last  MIDI note (108 = C8 for full 88-key)
+ * @param whiteWidth Width of each white key in px (blacks are derived from this)
  */
 export function buildKeyboard(
   startMidi = 21,
-  endMidi = 108,
+  endMidi   = 108,
   whiteWidth = 24,
-  whiteHeight = 120,
-  blackWidthRatio = 0.6,
-  blackHeightRatio = 0.62,
 ): KeyboardLayout {
-  const whites: WhiteKey[] = [];
-  const blacks: BlackKey[] = [];
+  const { whiteKeyHeightRatio, blackKeyWidthRatio, blackKeyHeightRatio, blackKeySpecOffsets } = KEY_GEOMETRY;
+
+  const wh = whiteWidth * whiteKeyHeightRatio;
+  const bw = whiteWidth * blackKeyWidthRatio;
+  const bh = whiteWidth * blackKeyHeightRatio;
+
+  const whites: KeyData[] = [];
+  const blacks: KeyData[] = [];
 
   let whiteIndex = 0;
 
   for (let midi = startMidi; midi <= endMidi; midi++) {
     const semitone = midi % 12;
+    const octave   = Math.floor(midi / 12) - 1;
     const noteName = midiToNoteName(midi);
 
     if (WHITE_SEMITONES.has(semitone)) {
       whites.push({
-        type: "white",
         midiNote: midi,
         noteName,
-        whiteIndex,
-        x: whiteIndex * whiteWidth,
-        width: whiteWidth,
-        height: whiteHeight,
+        octave,
+        isWhite: true,
+        x:      whiteIndex * whiteWidth,
+        width:  whiteWidth,
+        height: wh,
       });
       whiteIndex++;
     } else {
-      // Black key: find the previous white key's position to anchor
+      // Center = gap position + spec offset
+      // Gap between prevWhite and nextWhite is at (prevWhiteIndex + 1) × whiteWidth
       const prevWhiteIndex = whiteIndex - 1;
-      const offset = BLACK_KEY_OFFSETS[semitone] ?? 0.5;
-      const bw = whiteWidth * blackWidthRatio;
-      const bh = whiteHeight * blackHeightRatio;
-      const centerX = prevWhiteIndex * whiteWidth + whiteWidth * offset;
+      const specOffset = blackKeySpecOffsets[semitone] ?? 0;
+      const centerX = (prevWhiteIndex + 1 + specOffset) * whiteWidth;
 
       blacks.push({
-        type: "black",
         midiNote: midi,
         noteName,
-        x: centerX - bw / 2,
-        width: bw,
+        octave,
+        isWhite: false,
+        x:      centerX - bw / 2,
+        width:  bw,
         height: bh,
       });
     }
@@ -114,10 +121,12 @@ export function buildKeyboard(
     whites,
     blacks,
     totalWidth: whiteIndex * whiteWidth,
+    whiteWidth,
+    whiteHeight: wh,
   };
 }
 
-/** MIDI note → frequency (Hz) using equal temperament, A4 = 440Hz */
+/** MIDI note → frequency (Hz), equal temperament, A4 = 440 Hz */
 export function midiToFrequency(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { motion, useMotionValue, useAnimationControls, AnimatePresence } from "framer-motion";
-import { buildKeyboard, type WhiteKey, type BlackKey } from "@/lib/keyboard";
+import { motion, useMotionValue, AnimatePresence } from "framer-motion";
+import { buildKeyboard, KEY_GEOMETRY, type KeyData } from "@/lib/keyboard";
 import { playNote } from "@/lib/note-player";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 
@@ -11,10 +11,6 @@ const FULL_START = 21;   // A0
 const FULL_END   = 108;  // C8
 const SMALL_START = 48;  // C3
 const SMALL_END   = 83;  // B5 (36 white keys visible on mobile)
-
-const WHITE_HEIGHT = 110;
-const BLACK_HEIGHT_RATIO = 0.62;
-const BLACK_WIDTH_RATIO  = 0.58;
 
 // Depress amounts in px
 const MAX_DEPRESS = 6;
@@ -26,11 +22,23 @@ const SHIMMER_MIN = 8000;
 const SHIMMER_MAX = 14000;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type AnyKey = WhiteKey | BlackKey;
-
 interface GlowState {
   midiNote: number;
   startedAt: number;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+/** SVG path: rectangle with sharp top corners, rounded bottom corners only */
+function roundedBottomPath(x: number, y: number, w: number, h: number, r: number): string {
+  return [
+    `M ${x} ${y}`,
+    `L ${x + w} ${y}`,
+    `L ${x + w} ${y + h - r}`,
+    `Q ${x + w} ${y + h} ${x + w - r} ${y + h}`,
+    `L ${x + r} ${y + h}`,
+    `Q ${x} ${y + h} ${x} ${y + h - r}`,
+    "Z",
+  ].join(" ");
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -49,8 +57,9 @@ export function PianoKeyboard() {
   const whiteCountForLayout = useFull ? 52 : 21; // 52 whites in 88 keys, 21 whites in C3-B5
   const whiteWidth = Math.max(10, containerWidth / whiteCountForLayout);
 
-  const layout = buildKeyboard(startMidi, endMidi, whiteWidth, WHITE_HEIGHT, BLACK_WIDTH_RATIO, BLACK_HEIGHT_RATIO);
-  const allKeys: AnyKey[] = [...layout.whites, ...layout.blacks];
+  const layout = buildKeyboard(startMidi, endMidi, whiteWidth);
+  const { whiteHeight } = layout;
+  const { whiteKeyCornerRadius, blackKeyCornerRadius } = KEY_GEOMETRY;
 
   // ── Hover / depress state ────────────────────────────────────────────────
   const cursorX = useMotionValue(-1000);
@@ -62,14 +71,13 @@ export function PianoKeyboard() {
   const [shimmerActive, setShimmerActive] = useState(false);
 
   // ── Entrance animation ────────────────────────────────────────────────────
-  // Keys animate in from above. We stagger from centre-C outward.
   const c4Midi = 60;
   const c4White = layout.whites.find(k => k.midiNote === c4Midi);
   const c4X = c4White?.x ?? layout.totalWidth / 2;
 
-  function getDelay(key: AnyKey): number {
+  function getDelay(key: KeyData): number {
     const dist = Math.abs(key.x - c4X);
-    return (dist / layout.totalWidth) * 0.9; // max ~0.9s delay at extremes
+    return (dist / layout.totalWidth) * 0.9;
   }
 
   // ── Resize observer ───────────────────────────────────────────────────────
@@ -101,12 +109,11 @@ export function PianoKeyboard() {
   }, [reduced]);
 
   // ── Mouse handlers ────────────────────────────────────────────────────────
-  const findKeyAtX = useCallback((clientX: number): AnyKey | null => {
+  const findKeyAtX = useCallback((clientX: number): KeyData | null => {
     const svg = svgRef.current;
     if (!svg) return null;
     const rect = svg.getBoundingClientRect();
     const svgX = clientX - rect.left;
-    // Check black keys first (they're on top)
     for (const k of layout.blacks) {
       if (svgX >= k.x && svgX <= k.x + k.width) return k;
     }
@@ -127,7 +134,7 @@ export function PianoKeyboard() {
     setHoveredMidi(null);
   }, [cursorX]);
 
-  const handleKeyClick = useCallback((key: AnyKey) => {
+  const handleKeyClick = useCallback((key: KeyData) => {
     setPressedMidi(key.midiNote);
     playNote(key.midiNote);
     setGlows(prev => [...prev, { midiNote: key.midiNote, startedAt: Date.now() }]);
@@ -138,7 +145,7 @@ export function PianoKeyboard() {
   }, []);
 
   // ── Depress amount per key ────────────────────────────────────────────────
-  function getDepress(key: AnyKey): number {
+  function getDepress(key: KeyData): number {
     if (pressedMidi === key.midiNote) return CLICK_DEPRESS;
     if (hoveredMidi === null) return 0;
     const dist = Math.abs(key.midiNote - hoveredMidi);
@@ -151,8 +158,7 @@ export function PianoKeyboard() {
     return glows.some(g => g.midiNote === midi);
   }
 
-  // ── SVG dimensions ────────────────────────────────────────────────────────
-  const svgHeight = WHITE_HEIGHT + 8; // small padding
+  const svgHeight = whiteHeight + 8;
 
   return (
     <div
@@ -186,25 +192,22 @@ export function PianoKeyboard() {
         onMouseLeave={handleMouseLeave}
       >
         <defs>
-          {/* White key gradient — subtle warm depth */}
+          {/* White key gradient: slightly darker top, bright middle, subtle shadow bottom */}
           <linearGradient id="wk-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FAFAF7" />
-            <stop offset="100%" stopColor="#EDEDEA" />
+            <stop offset="0%"   stopColor="#EBEBЕ8" />
+            <stop offset="10%"  stopColor="#FAFAF7" />
+            <stop offset="80%"  stopColor="#F5F5F2" />
+            <stop offset="100%" stopColor="#D8D8D5" />
           </linearGradient>
           {/* White key glow gradient */}
           <linearGradient id="wk-glow" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(38,93%,60%)" stopOpacity="0.7" />
+            <stop offset="0%"  stopColor="hsl(38,93%,60%)" stopOpacity="0.7" />
             <stop offset="30%" stopColor="hsl(38,93%,60%)" stopOpacity="0.0" />
-          </linearGradient>
-          {/* Black key highlight */}
-          <linearGradient id="bk-hl" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.12)" />
-            <stop offset="40%" stopColor="rgba(255,255,255,0.0)" />
           </linearGradient>
           {/* Black key glow */}
           <linearGradient id="bk-glow" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(245,85%,65%)" stopOpacity="0.9" />
-            <stop offset="50%" stopColor="hsl(38,93%,60%)" stopOpacity="0.0" />
+            <stop offset="0%"  stopColor="hsl(245,85%,65%)" stopOpacity="0.9" />
+            <stop offset="50%" stopColor="hsl(38,93%,60%)"  stopOpacity="0.0" />
           </linearGradient>
           {/* Drop shadow filter for white keys */}
           <filter id="wk-shadow" x="-5%" y="-5%" width="110%" height="115%">
@@ -226,6 +229,10 @@ export function PianoKeyboard() {
             const isGlowing = hasGlow(key.midiNote);
             const isHovered = hoveredMidi === key.midiNote;
             const delay = getDelay(key);
+            const x = key.x + 0.5;
+            const w = key.width - 1;
+            const h = key.height - 1;
+            const r = whiteKeyCornerRadius;
 
             return (
               <motion.g
@@ -240,13 +247,9 @@ export function PianoKeyboard() {
                 onClick={() => handleKeyClick(key)}
                 style={{ cursor: "pointer" }}
               >
-                {/* Key body */}
-                <motion.rect
-                  x={key.x + 0.5}
-                  y={0.5}
-                  width={key.width - 1}
-                  height={key.height - 1}
-                  rx={2}
+                {/* Key body — rounded bottom only */}
+                <motion.path
+                  d={roundedBottomPath(x, 0.5, w, h, r)}
                   fill="url(#wk-grad)"
                   stroke="#888"
                   strokeWidth={0.5}
@@ -256,23 +259,15 @@ export function PianoKeyboard() {
                 />
                 {/* Hover tint */}
                 {isHovered && (
-                  <rect
-                    x={key.x + 0.5}
-                    y={0.5}
-                    width={key.width - 1}
-                    height={key.height - 1}
-                    rx={2}
+                  <path
+                    d={roundedBottomPath(x, 0.5, w, h, r)}
                     fill="rgba(245,158,11,0.08)"
                   />
                 )}
                 {/* Glow on click */}
                 {isGlowing && (
-                  <motion.rect
-                    x={key.x + 0.5}
-                    y={0.5}
-                    width={key.width - 1}
-                    height={key.height * 0.4}
-                    rx={2}
+                  <motion.path
+                    d={roundedBottomPath(x, 0.5, w, h * 0.4, r)}
                     fill="url(#wk-glow)"
                     initial={{ opacity: 0.9 }}
                     animate={{ opacity: 0 }}
@@ -291,6 +286,7 @@ export function PianoKeyboard() {
             const isGlowing = hasGlow(key.midiNote);
             const isHovered = hoveredMidi === key.midiNote;
             const delay = getDelay(key);
+            const r = blackKeyCornerRadius;
 
             return (
               <motion.g
@@ -305,45 +301,33 @@ export function PianoKeyboard() {
                 onClick={() => handleKeyClick(key)}
                 style={{ cursor: "pointer" }}
               >
-                {/* Key body */}
-                <motion.rect
-                  x={key.x}
-                  y={0}
-                  width={key.width}
-                  height={key.height}
-                  rx={2}
+                {/* Key body — flat dark, rounded bottom only */}
+                <motion.path
+                  d={roundedBottomPath(key.x, 0, key.width, key.height, r)}
                   fill="#0A0A0B"
                   animate={{ y: depress * 0.8 }}
                   transition={{ type: "spring", stiffness: 600, damping: 30 }}
                 />
-                {/* Top highlight for dimension */}
+                {/* 2px top highlight strip only */}
                 <rect
                   x={key.x + 1}
                   y={1}
                   width={key.width - 2}
-                  height={key.height * 0.35}
-                  rx={1}
-                  fill="url(#bk-hl)"
+                  height={2}
+                  fill="rgba(255,255,255,0.08)"
+                  style={{ pointerEvents: "none" }}
                 />
                 {/* Hover tint */}
                 {isHovered && (
-                  <rect
-                    x={key.x}
-                    y={0}
-                    width={key.width}
-                    height={key.height * 0.5}
-                    rx={1}
+                  <path
+                    d={roundedBottomPath(key.x, 0, key.width, key.height * 0.5, r)}
                     fill="rgba(245,158,11,0.25)"
                   />
                 )}
                 {/* Glow on click */}
                 {isGlowing && (
-                  <motion.rect
-                    x={key.x}
-                    y={0}
-                    width={key.width}
-                    height={key.height * 0.5}
-                    rx={1}
+                  <motion.path
+                    d={roundedBottomPath(key.x, 0, key.width, key.height * 0.5, r)}
                     fill="url(#bk-glow)"
                     initial={{ opacity: 0.9 }}
                     animate={{ opacity: 0 }}
@@ -362,7 +346,7 @@ export function PianoKeyboard() {
               x={0}
               y={0}
               width={layout.totalWidth}
-              height={WHITE_HEIGHT}
+              height={whiteHeight}
               fill="url(#shimmer-grad)"
               initial={{ x: -layout.totalWidth, opacity: 0.8 }}
               animate={{ x: layout.totalWidth * 2, opacity: 0.8 }}
