@@ -6,6 +6,10 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
+import { PianoKeyWave } from "@/components/motion/PianoKeyWave";
+import { AnimatedHeadline } from "@/components/motion/AnimatedHeadline";
+import { TiltCard } from "@/components/motion/TiltCard";
+import { MagneticWrapper } from "@/components/motion/MagneticWrapper";
 import { NewsletterForm } from "@/components/site/NewsletterForm";
 import { getFeaturedProducts } from "@/data/products";
 
@@ -98,14 +102,8 @@ export default function HomePage() {
           aria-hidden="true"
         />
 
-        {/* Piano keys decoration at bottom */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-2 opacity-30"
-          style={{
-            background: "repeating-linear-gradient(90deg, #fff 0px, #fff 14px, transparent 14px, transparent 20px, #000 20px, #000 34px, transparent 34px, transparent 40px)",
-          }}
-          aria-hidden="true"
-        />
+        {/* Animated piano key wave */}
+        <PianoKeyWave />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-32 pt-40">
           <div className="max-w-5xl">
@@ -117,14 +115,15 @@ export default function HomePage() {
             </div>
 
             {/* Headline */}
-            <h1 className="animate-fade-up font-display font-bold text-white leading-[0.9] mb-8"
-              style={{ fontSize: "clamp(3rem, 10vw, 8rem)", letterSpacing: "-0.03em", animationDelay: "250ms", animationFillMode: "both" }}
+            <h1
+              className="font-display font-bold text-white leading-[0.9] mb-8"
+              style={{ fontSize: "clamp(3rem, 10vw, 8rem)", letterSpacing: "-0.03em" }}
             >
-              Keeping digital
-              <br />
-              <span className="text-[hsl(38,93%,50%)]">pianos alive</span>
-              <br />
-              since 1980.
+              <AnimatedHeadline
+                text="Keeping digital pianos alive since 1980."
+                highlightWords={["pianos", "alive"]}
+                delay={0.25}
+              />
             </h1>
 
             {/* Subhead */}
@@ -138,20 +137,24 @@ export default function HomePage() {
             {/* CTAs */}
             <div className="animate-fade-up flex flex-wrap gap-4"
               style={{ animationDelay: "550ms", animationFillMode: "both" }}>
-              <Button size="xl" variant="secondary" asChild>
-                <Link href="/shop">
-                  Browse Parts
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-              </Button>
-              <Button
-                size="xl"
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white hover:text-[hsl(240,10%,4%)]"
-                asChild
-              >
-                <Link href="/repairs/request">Request a Repair</Link>
-              </Button>
+              <MagneticWrapper>
+                <Button size="xl" variant="secondary" asChild>
+                  <Link href="/shop">
+                    Browse Parts
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </Button>
+              </MagneticWrapper>
+              <MagneticWrapper>
+                <Button
+                  size="xl"
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white hover:text-[hsl(240,10%,4%)]"
+                  asChild
+                >
+                  <Link href="/repairs/request">Request a Repair</Link>
+                </Button>
+              </MagneticWrapper>
             </div>
           </div>
         </div>
@@ -162,7 +165,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6">
           <dl className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {STATS.map((stat) => (
-              <div key={stat.label}>
+              <TiltCard key={stat.label} maxTilt={6}>
                 <dt className="sr-only">{stat.label}</dt>
                 <dd className="font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-none mb-2">
                   <AnimatedCounter target={stat.value} suffix={stat.suffix} />
@@ -170,7 +173,7 @@ export default function HomePage() {
                 <p className="text-sm font-semibold text-white/70 uppercase tracking-wider">
                   {stat.label}
                 </p>
-              </div>
+              </TiltCard>
             ))}
           </dl>
         </div>

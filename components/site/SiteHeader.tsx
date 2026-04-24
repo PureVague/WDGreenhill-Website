@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, Menu, X, Phone } from "lucide-react";
@@ -115,14 +116,24 @@ export function SiteHeader() {
                   : "bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
               )}
               aria-label="Open cart"
+              data-cart-trigger
             >
               <ShoppingCart className="w-4 h-4" />
               <span className="hidden sm:inline">Cart</span>
-              {mounted && totalItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[hsl(38,93%,50%)] text-xs font-bold text-[hsl(240,10%,4%)]">
-                  {totalItems}
-                </span>
-              )}
+              <AnimatePresence>
+                {mounted && totalItems > 0 && (
+                  <motion.span
+                    key={totalItems}
+                    className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[hsl(38,93%,50%)] text-xs font-bold text-[hsl(240,10%,4%)]"
+                    initial={{ scale: 0.4, opacity: 0 }}
+                    animate={{ scale: [1.4, 1], opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    {totalItems}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
 
             {/* Mobile menu toggle */}
