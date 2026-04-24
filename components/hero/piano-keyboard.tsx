@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, useMotionValue, AnimatePresence } from "framer-motion";
 import { buildKeyboard, KEY_GEOMETRY, type KeyData } from "@/lib/keyboard";
-import { playNote } from "@/lib/note-player";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 
 // ─── Layout constants ────────────────────────────────────────────────────────
@@ -113,7 +112,10 @@ export function PianoKeyboard() {
     const svg = svgRef.current;
     if (!svg) return null;
     const rect = svg.getBoundingClientRect();
-    const svgX = clientX - rect.left;
+    // rect.width is the CSS rendered width; layout.totalWidth is the SVG user-unit width.
+    // If minWidth/CSS scaling makes them differ, we must convert before looking up keys.
+    const scaleX = rect.width > 0 ? layout.totalWidth / rect.width : 1;
+    const svgX = (clientX - rect.left) * scaleX;
     for (const k of layout.blacks) {
       if (svgX >= k.x && svgX <= k.x + k.width) return k;
     }
@@ -136,7 +138,6 @@ export function PianoKeyboard() {
 
   const handleKeyClick = useCallback((key: KeyData) => {
     setPressedMidi(key.midiNote);
-    playNote(key.midiNote);
     setGlows(prev => [...prev, { midiNote: key.midiNote, startedAt: Date.now() }]);
     setTimeout(() => setPressedMidi(null), 200);
     setTimeout(() => {
@@ -185,7 +186,6 @@ export function PianoKeyboard() {
         style={{
           left: "50%",
           transform: "translateX(-50%)",
-          minWidth: "100%",
           cursor: "pointer",
         }}
         onMouseMove={handleMouseMove}
