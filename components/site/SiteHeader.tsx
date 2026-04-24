@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { label: "Shop", href: "/shop" },
+  { label: "Repairs", href: "/repairs" },
   { label: "Kawai Support", href: "/kawai-support" },
   { label: "Manuals", href: "/manuals" },
   { label: "About", href: "/about" },
@@ -160,7 +161,7 @@ export function SiteHeader() {
             ))}
             <div className="pt-4">
               <Button asChild className="w-full" size="sm">
-                <Link href="/kawai-support/request">Request Kawai Support</Link>
+                <Link href="/repairs/request">Request a Repair</Link>
               </Button>
             </div>
           </nav>

@@ -13,8 +13,9 @@ const SHOP_LINKS = [
 ];
 
 const SUPPORT_LINKS = [
+  { label: "Repairs & Servicing", href: "/repairs" },
+  { label: "Request a Repair", href: "/repairs/request" },
   { label: "Kawai Support Hub", href: "/kawai-support" },
-  { label: "Request a Repair", href: "/kawai-support/request" },
   { label: "Kawai FAQ", href: "/kawai-support/faq" },
   { label: "Manuals Library", href: "/manuals" },
 ];
