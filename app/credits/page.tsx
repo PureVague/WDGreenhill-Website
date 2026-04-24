@@ -21,48 +21,60 @@ export default function CreditsPage() {
       </p>
 
       <div className="space-y-6">
-        {TRACKS.map((track, i) => (
-          <div
-            key={track.id}
-            className="flex flex-col gap-1 p-5 rounded-xl border border-[hsl(240,6%,88%)] bg-white"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-semibold text-[hsl(240,10%,4%)]">
-                  <span className="text-[hsl(240,4%,56%)] font-mono text-sm mr-2">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  {track.title}
-                </p>
-                <p className="text-sm text-[hsl(240,4%,46%)] mt-0.5">
-                  {track.composer}
-                  {track.performer !== track.composer && ` · Performed by ${track.performer}`}
-                </p>
+        {TRACKS.map((track, i) => {
+          const isTbc = track.source === "TBC" || track.licence === "TBC";
+          return (
+            <div
+              key={track.id}
+              className="flex flex-col gap-1 p-5 rounded-xl border border-[hsl(240,6%,88%)] bg-white"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-[hsl(240,10%,4%)]">
+                    <span className="text-[hsl(240,4%,56%)] font-mono text-sm mr-2">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    {track.title}
+                  </p>
+                  <p className="text-sm text-[hsl(240,4%,46%)] mt-0.5">
+                    {track.composer !== "Unknown" ? track.composer : "Composer TBC"}
+                    {track.performer !== track.composer && track.performer !== "Unknown" &&
+                      ` · Performed by ${track.performer}`}
+                  </p>
+                </div>
+                <span
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
+                    isTbc
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-[hsl(245,85%,58%)]/10 text-[hsl(245,85%,58%)]"
+                  }`}
+                >
+                  {isTbc ? "Licence TBC" : track.licence}
+                </span>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[hsl(245,85%,58%)]/10 text-[hsl(245,85%,58%)] whitespace-nowrap flex-shrink-0">
-                {track.licence}
-              </span>
-            </div>
 
-            <div className="flex items-center gap-4 mt-2 text-xs text-[hsl(240,4%,60%)]">
-              <span>Source: {track.source}</span>
-              <a
-                href={track.licenceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-[hsl(245,85%,58%)] underline transition-colors"
-              >
-                Licence details ↗
-              </a>
-            </div>
+              <div className="flex items-center gap-4 mt-2 text-xs text-[hsl(240,4%,60%)]">
+                <span>Source: {isTbc ? "TBC" : track.source}</span>
+                {!isTbc && track.licenceUrl !== "#" && (
+                  <a
+                    href={track.licenceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[hsl(245,85%,58%)] underline transition-colors"
+                  >
+                    Licence details ↗
+                  </a>
+                )}
+              </div>
 
-            {track.attribution && (
-              <p className="text-xs text-[hsl(240,4%,56%)] mt-2 italic border-l-2 border-[hsl(245,85%,58%)] pl-3">
-                Attribution required: {track.attribution}
-              </p>
-            )}
-          </div>
-        ))}
+              {track.attribution && (
+                <p className="text-xs text-[hsl(240,4%,56%)] mt-2 italic border-l-2 border-[hsl(245,85%,58%)] pl-3">
+                  Attribution required: {track.attribution}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-12 pt-8 border-t border-[hsl(240,6%,88%)] text-xs text-[hsl(240,4%,56%)] space-y-1">

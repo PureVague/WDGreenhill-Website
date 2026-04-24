@@ -29,7 +29,7 @@ export const TRACKS: Track[] = [
     licence: "Public Domain",
     licenceUrl: "https://musopen.org/music/8010-3-gymnopedies/",
     file: "/audio/track-01.mp3",
-    durationSec: 210,
+    durationSec: 109,
   },
   {
     id: "clair-de-lune",
@@ -40,7 +40,7 @@ export const TRACKS: Track[] = [
     licence: "Public Domain",
     licenceUrl: "https://musopen.org/music/2504-suite-bergamasque/",
     file: "/audio/track-02.mp3",
-    durationSec: 300,
+    durationSec: 113,
   },
   {
     id: "gnossienne-1",
@@ -51,39 +51,28 @@ export const TRACKS: Track[] = [
     licence: "Public Domain",
     licenceUrl: "https://musopen.org/music/8008-trois-gnossiennes/",
     file: "/audio/track-03.mp3",
-    durationSec: 220,
+    durationSec: 142,
   },
   {
     id: "ambient-piano-04",
-    title: "Ambient Piano (Track 4)",
-    composer: "Various",
-    performer: "Various",
-    source: "Pixabay Music",
-    licence: "Pixabay Content Licence",
-    licenceUrl: "https://pixabay.com/service/license-summary/",
+    title: "Ambient Piano (Track 4)", // TODO: confirm title
+    composer: "Unknown",             // TODO: confirm composer
+    performer: "Unknown",            // TODO: confirm performer
+    source: "TBC",                   // TODO: confirm licence details
+    licence: "TBC",                  // TODO: confirm licence details
+    licenceUrl: "#",                 // TODO: confirm licence details
     file: "/audio/track-04.mp3",
-    durationSec: 180,
+    durationSec: 131,
   },
   {
     id: "ambient-piano-05",
-    title: "Ambient Piano (Track 5)",
-    composer: "Various",
-    performer: "Various",
-    source: "Pixabay Music",
-    licence: "Pixabay Content Licence",
-    licenceUrl: "https://pixabay.com/service/license-summary/",
+    title: "Ambient Piano (Track 5)", // TODO: confirm title
+    composer: "Unknown",              // TODO: confirm composer
+    performer: "Unknown",             // TODO: confirm performer
+    source: "TBC",                    // TODO: confirm licence details
+    licence: "TBC",                   // TODO: confirm licence details
+    licenceUrl: "#",                  // TODO: confirm licence details
     file: "/audio/track-05.mp3",
-    durationSec: 200,
-  },
-  {
-    id: "ambient-piano-06",
-    title: "Ambient Piano (Track 6)",
-    composer: "Various",
-    performer: "Various",
-    source: "Pixabay Music",
-    licence: "Pixabay Content Licence",
-    licenceUrl: "https://pixabay.com/service/license-summary/",
-    file: "/audio/track-06.mp3",
-    durationSec: 190,
+    durationSec: 141,
   },
 ];
