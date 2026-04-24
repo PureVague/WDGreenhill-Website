@@ -1,3 +1,4 @@
+// Run with: npx tsx scripts/get-durations.ts
 import { parseFile } from "music-metadata";
 import { readdirSync } from "fs";
 import { join } from "path";

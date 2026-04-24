@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { TRACKS } from "@/data/tracks";
+import { tracks } from "@/data/tracks";
 
 export const metadata: Metadata = {
   title: "Music Credits",
-  description: "Licensing and attribution for background music used on this site.",
+  description: "Credits for the ambient piano music used on this site.",
   robots: { index: false, follow: false },
 };
 
@@ -14,87 +14,71 @@ export default function CreditsPage() {
       <h1 className="font-display font-bold text-4xl text-[hsl(240,10%,4%)] mb-4">
         Music Credits
       </h1>
+
       <p className="text-[hsl(240,4%,46%)] mb-12 leading-relaxed">
-        This site plays soft ambient piano music to enhance the browsing experience.
-        All tracks used are royalty-free and/or licensed for commercial use. Full
-        attribution details are listed below.
+        The ambient piano music you hear on this site is sourced from Pixabay under the{" "}
+        <a
+          href="https://pixabay.com/service/license-summary/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-[hsl(245,85%,58%)] transition-colors"
+        >
+          Pixabay Content License
+        </a>
+        . Pixabay does not require attribution, but we credit the artists below in
+        appreciation of their work. The full licence terms are available{" "}
+        <a
+          href="https://pixabay.com/service/license-summary/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-[hsl(245,85%,58%)] transition-colors"
+        >
+          here
+        </a>
+        .
       </p>
 
-      <div className="space-y-6">
-        {TRACKS.map((track, i) => {
-          const isTbc = track.source === "TBC" || track.licence === "TBC";
-          return (
-            <div
-              key={track.id}
-              className="flex flex-col gap-1 p-5 rounded-xl border border-[hsl(240,6%,88%)] bg-white"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="font-semibold text-[hsl(240,10%,4%)]">
-                    <span className="text-[hsl(240,4%,56%)] font-mono text-sm mr-2">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    {track.title}
-                  </p>
-                  <p className="text-sm text-[hsl(240,4%,46%)] mt-0.5">
-                    {track.composer !== "Unknown" ? track.composer : "Composer TBC"}
-                    {track.performer !== track.composer && track.performer !== "Unknown" &&
-                      ` · Performed by ${track.performer}`}
-                  </p>
-                </div>
-                <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${
-                    isTbc
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-[hsl(245,85%,58%)]/10 text-[hsl(245,85%,58%)]"
-                  }`}
+      <div className="divide-y divide-[hsl(240,6%,90%)]">
+        {tracks.map((track) => (
+          <div key={track.id} className="py-6 first:pt-0 last:pb-0">
+            <h3 className="font-display font-semibold text-lg text-[hsl(240,10%,4%)] mb-1">
+              {track.title}
+            </h3>
+            <p className="text-sm text-[hsl(240,4%,40%)] mb-3">
+              {track.artist}
+            </p>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[hsl(240,4%,56%)]">
+              <span>
+                Source:{" "}
+                <a
+                  href={track.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-[hsl(245,85%,58%)] transition-colors"
                 >
-                  {isTbc ? "Licence TBC" : track.licence}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4 mt-2 text-xs text-[hsl(240,4%,60%)]">
-                <span>Source: {isTbc ? "TBC" : track.source}</span>
-                {!isTbc && track.licenceUrl !== "#" && (
-                  <a
-                    href={track.licenceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-[hsl(245,85%,58%)] underline transition-colors"
-                  >
-                    Licence details ↗
-                  </a>
-                )}
-              </div>
-
-              {track.attribution && (
-                <p className="text-xs text-[hsl(240,4%,56%)] mt-2 italic border-l-2 border-[hsl(245,85%,58%)] pl-3">
-                  Attribution required: {track.attribution}
-                </p>
-              )}
+                  {track.source}
+                </a>
+              </span>
+              <span>
+                Licence:{" "}
+                <a
+                  href={track.licenceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-[hsl(245,85%,58%)] transition-colors"
+                >
+                  {track.licence}
+                </a>
+              </span>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
-      <div className="mt-12 pt-8 border-t border-[hsl(240,6%,88%)] text-xs text-[hsl(240,4%,56%)] space-y-1">
-        <p>
-          Public domain recordings sourced from{" "}
-          <a href="https://musopen.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-[hsl(245,85%,58%)]">
-            Musopen.org
-          </a>{" "}
-          — a non-profit dedicated to freeing music from copyright.
-        </p>
-        <p>
-          Additional tracks from{" "}
-          <a href="https://pixabay.com/music/" target="_blank" rel="noopener noreferrer" className="underline hover:text-[hsl(245,85%,58%)]">
-            Pixabay Music
-          </a>{" "}
-          under the Pixabay Content Licence (free for commercial use, no attribution required).
-        </p>
-        <p className="mt-4">
-          <Link href="/" className="text-[hsl(245,85%,58%)] hover:underline">← Back to site</Link>
-        </p>
+      <div className="mt-12 pt-8 border-t border-[hsl(240,6%,88%)] text-xs text-[hsl(240,4%,56%)]">
+        <Link href="/" className="text-[hsl(245,85%,58%)] hover:underline">
+          ← Back to site
+        </Link>
       </div>
     </div>
   );

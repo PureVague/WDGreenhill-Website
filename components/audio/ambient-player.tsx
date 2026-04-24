@@ -96,12 +96,11 @@ export function AmbientPlayer() {
                   }
                   transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                 >
-                  {currentTrack.title}
+                  {currentTrack.title} — {currentTrack.artist}
                 </motion.p>
               </div>
               <p className="text-xs text-white/50 mt-0.5 truncate">
-                {currentTrack.composer}
-                {currentTrack.performer !== currentTrack.composer && ` · ${currentTrack.performer}`}
+                {currentTrack.source}
               </p>
             </div>
 
