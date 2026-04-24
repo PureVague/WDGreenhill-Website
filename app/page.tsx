@@ -6,7 +6,7 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { PianoKeyWave } from "@/components/motion/PianoKeyWave";
+import { PianoKeyboard } from "@/components/hero/piano-keyboard";
 import { AnimatedHeadline } from "@/components/motion/AnimatedHeadline";
 import { TiltCard } from "@/components/motion/TiltCard";
 import { MagneticWrapper } from "@/components/motion/MagneticWrapper";
@@ -102,8 +102,8 @@ export default function HomePage() {
           aria-hidden="true"
         />
 
-        {/* Animated piano key wave */}
-        <PianoKeyWave />
+        {/* Realistic 88-key piano keyboard */}
+        <PianoKeyboard />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-32 pt-40">
           <div className="max-w-5xl">
