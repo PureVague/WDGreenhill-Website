@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" role="img" aria-label="WD Greenhill & Co Ltd">
+  <title>WD Greenhill &amp; Co Ltd</title>
+  <!-- Decorative bar accent -->
+  <rect x="0" y="0" width="3" height="48" fill="#4F46E5" rx="1.5"/>
+  <!-- Wordmark -->
+  <text x="11" y="28" font-family="Georgia, 'Times New Roman', 'Palatino Linotype', serif" font-weight="700" font-size="22" fill="#0A0A0F" letter-spacing="-0.5">WD Greenhill</text>
+  <!-- Sub-wordmark -->
+  <text x="12" y="42" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="600" font-size="9" fill="#D97706" letter-spacing="2.5">&#38; CO LTD</text>
+</svg>
