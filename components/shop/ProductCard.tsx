@@ -13,6 +13,7 @@ import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/data/products";
 import { cn } from "@/lib/utils";
+import { EnquireModal } from "@/components/shop/EnquireModal";
 
 interface ProductCardProps {
   product: Product;
@@ -27,6 +28,7 @@ export function ProductCard({ product, onEnquire, className }: ProductCardProps)
   const inStock = product.stock > 0;
   const [imgSrc, setImgSrc] = useState(product.images[0] ?? "/images/placeholder-part.svg");
   const [added, setAdded] = useState(false);
+  const [isEnquireOpen, setIsEnquireOpen] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
 
   const handleAddToCart = () => {
@@ -138,7 +140,7 @@ export function ProductCard({ product, onEnquire, className }: ProductCardProps)
             size="sm"
             variant="outline"
             className="w-full gap-2"
-            onClick={() => onEnquire?.(product)}
+            onClick={() => onEnquire ? onEnquire(product) : setIsEnquireOpen(true)}
             aria-label={`Enquire about ${product.title}`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -146,6 +148,15 @@ export function ProductCard({ product, onEnquire, className }: ProductCardProps)
           </Button>
         )}
       </div>
+
+      {/* Per-card enquire modal — only mounts content when open */}
+      {!onEnquire && (
+        <EnquireModal
+          product={product}
+          isOpen={isEnquireOpen}
+          onClose={() => setIsEnquireOpen(false)}
+        />
+      )}
     </motion.article>
   );
 }

@@ -8,7 +8,7 @@ import { ShoppingCart, MessageSquare, Package, Truck, RefreshCw, ChevronRight } 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { EnquireModal } from "@/components/site/EnquireModal";
+import { EnquireModal } from "@/components/shop/EnquireModal";
 import { useCartStore } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/format";
 import { getProductBySlug, getRelatedProducts } from "@/data/products";
@@ -24,7 +24,7 @@ export function ProductPageClient({ sku }: { sku: string }) {
 
   const [activeTab, setActiveTab] = useState<Tab>("Description");
   const [quantity, setQuantity] = useState(1);
-  const [enquireProduct, setEnquireProduct] = useState<Product | null>(null);
+  const [isEnquireOpen, setIsEnquireOpen] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const related = getRelatedProducts(product);
   const inStock = product.stock > 0;
@@ -171,7 +171,7 @@ export function ProductPageClient({ sku }: { sku: string }) {
                 size="lg"
                 variant="outline"
                 className="w-full gap-2"
-                onClick={() => setEnquireProduct(product)}
+                onClick={() => setIsEnquireOpen(true)}
               >
                 <MessageSquare className="w-5 h-5" />
                 Enquire About Availability
@@ -292,7 +292,7 @@ export function ProductPageClient({ sku }: { sku: string }) {
         )}
       </div>
 
-      <EnquireModal product={enquireProduct} onClose={() => setEnquireProduct(null)} />
+      <EnquireModal product={product} isOpen={isEnquireOpen} onClose={() => setIsEnquireOpen(false)} />
     </div>
   );
 }
