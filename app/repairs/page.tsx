@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { brands } from "@/data/brands";
 import { CheckCircle2, Phone, Wrench, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BrandsGrid } from "@/components/repairs/BrandsGrid";
 
 export const metadata: Metadata = {
   title: "Digital Piano Repairs — Every Make & Model",
@@ -34,8 +34,6 @@ const PROCESS_STEPS = [
 ];
 
 export default function RepairsPage() {
-  const sortedBrands = [...brands].sort((a, b) => a.name.localeCompare(b.name));
-
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -85,26 +83,7 @@ export default function RepairsPage() {
             including vintage and discontinued models. If the parts exist, we can source them.
           </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {sortedBrands.map((brand) => (
-              <div
-                key={brand.slug}
-                className="group flex items-center gap-3 p-3 rounded-lg border border-[hsl(240,6%,88%)] bg-[hsl(50,20%,98%)] hover:border-[hsl(245,85%,58%)] hover:bg-[hsl(245,85%,58%)]/5 transition-all"
-              >
-                <div className="w-2 h-2 rounded-full bg-[hsl(245,85%,58%)] flex-shrink-0 group-hover:scale-125 transition-transform" />
-                <span className="text-sm font-semibold text-[hsl(240,10%,4%)]">{brand.name}</span>
-                {brand.slug === "kawai" && (
-                  <span className="ml-auto text-[10px] font-bold text-[hsl(245,85%,58%)] bg-[hsl(245,85%,58%)]/10 px-1.5 py-0.5 rounded">
-                    Official
-                  </span>
-                )}
-              </div>
-            ))}
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-[hsl(240,6%,88%)] bg-transparent">
-              <div className="w-2 h-2 rounded-full bg-[hsl(240,4%,70%)] flex-shrink-0" />
-              <span className="text-sm text-[hsl(240,4%,56%)] italic">Other — ask us</span>
-            </div>
-          </div>
+          <BrandsGrid />
         </div>
       </section>
 
