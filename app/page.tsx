@@ -3,7 +3,6 @@ import Link from "next/link";
 import { ArrowRight, Wrench, Search, Package, Award, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/site/SectionHeading";
-import { ProductCard } from "@/components/shop/ProductCard";
 import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { PianoKeyboard } from "@/components/hero/piano-keyboard";
@@ -11,8 +10,6 @@ import { AnimatedHeadline } from "@/components/motion/AnimatedHeadline";
 import { TiltCard } from "@/components/motion/TiltCard";
 import { MagneticWrapper } from "@/components/motion/MagneticWrapper";
 import { NewsletterForm } from "@/components/site/NewsletterForm";
-import { getFeaturedProducts } from "@/data/products";
-
 export const metadata: Metadata = {
   title: "Europe's Largest Digital Piano Parts Stockist | WD Greenhill & Co",
   description:
@@ -71,8 +68,6 @@ const TESTIMONIALS = [
 ];
 
 export default function HomePage() {
-  const featuredProducts = getFeaturedProducts();
-
   return (
     <div className="flex flex-col">
       {/* ═══ HERO ═══ */}
@@ -260,30 +255,6 @@ export default function HomePage() {
               </Button>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ═══ FEATURED PRODUCTS ═══ */}
-      <section className="py-24 px-6 max-w-7xl mx-auto w-full" aria-labelledby="featured-products-title">
-        <div className="flex items-end justify-between mb-10 flex-wrap gap-4">
-          <SectionHeading
-            label="Popular parts"
-            title="Featured Products"
-            className="mb-0"
-          />
-          <Button variant="outline" asChild>
-            <Link href="/shop">
-              View All Parts
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-          {featuredProducts.map((product, i) => (
-            <ScrollReveal key={product.sku} delay={i * 80}>
-              <ProductCard product={product} />
-            </ScrollReveal>
-          ))}
         </div>
       </section>
 
