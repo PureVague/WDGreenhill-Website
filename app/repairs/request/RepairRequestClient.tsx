@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,16 +54,26 @@ export function RepairRequestClient() {
   const [submitted, setSubmitted] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState("");
+  const searchParams = useSearchParams();
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { consent: false },
   });
+
+  // Pre-populate brand + model from query string (e.g. ?brand=Kawai&model=CA901)
+  useEffect(() => {
+    const brand = searchParams.get("brand");
+    const model = searchParams.get("model");
+    if (brand) setValue("brand", brand, { shouldValidate: false });
+    if (model) setValue("model", model, { shouldValidate: false });
+  }, [searchParams, setValue]);
 
   const selectedBrand = watch("brand");
   const descLength = watch("problemDescription")?.length ?? 0;

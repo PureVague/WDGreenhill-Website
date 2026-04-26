@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { RepairRequestClient } from "./RepairRequestClient";
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function RepairRequestPage() {
-  return <RepairRequestClient />;
+  return (
+    <Suspense>
+      <RepairRequestClient />
+    </Suspense>
+  );
 }
