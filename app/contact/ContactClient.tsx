@@ -130,17 +130,19 @@ export function ContactClient() {
               <h3 className="font-semibold text-sm uppercase tracking-widest text-[hsl(240,4%,56%)] mb-5">Location</h3>
               <div className="rounded-xl overflow-hidden border border-[hsl(240,6%,88%)] h-64">
                 <iframe
-                  title="WD Greenhill & Co location map"
-                  src="https://www.openstreetmap.org/export/embed.html?bbox=-0.6622%2C51.5792%2C-0.6222%2C51.5992&layer=mapnik&marker=51.5892%2C-0.6422"
+                  title="WD Greenhill & Co location — 138 Ashingdon Road, Rochford"
+                  src="https://www.google.com/maps?q=138+Ashingdon+Road,+Rochford,+Essex+SS4+1TA,+UK&output=embed"
                   width="100%"
                   height="256"
                   style={{ border: 0 }}
+                  allowFullScreen={false}
                   loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
                   aria-label="Map showing WD Greenhill & Co location in Rochford, Essex"
                 />
               </div>
               <a
-                href="https://www.openstreetmap.org/?mlat=51.5892&mlon=-0.6422#map=15/51.5892/-0.6422"
+                href="https://www.google.com/maps/search/138+Ashingdon+Road,+Rochford,+Essex+SS4+1TA,+UK"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-[hsl(245,85%,58%)] hover:underline mt-1 inline-block"

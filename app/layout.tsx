@@ -86,6 +86,11 @@ const organizationJsonLd = {
     postalCode: "SS4 1TA",
     addressCountry: "GB",
   },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 51.5840,
+    longitude: 0.7110,
+  },
   telephone: "+441702546195",
   email: "info@wdgreenhill.com",
   openingHoursSpecification: [
