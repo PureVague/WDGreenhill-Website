@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -129,6 +131,11 @@ export default function RootLayout({
             <PlayerMount />
           </SmoothScroll>
         </AmbientPlayerProvider>
+        {/* Vercel Analytics — cookieless, no consent banner required under UK GDPR/PECR.
+            Only sends data from production deployments; silent in dev and preview. */}
+        <Analytics />
+        {/* Core Web Vitals — reports LCP, CLS, FCP, TTFB, INP to the Vercel dashboard. */}
+        <SpeedInsights />
       </body>
     </html>
   );
