@@ -3,13 +3,6 @@ import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
-import { SiteHeader } from "@/components/site/SiteHeader";
-import { SiteFooter } from "@/components/site/SiteFooter";
-import { SmoothScroll } from "@/components/motion/SmoothScroll";
-import { CustomCursor } from "@/components/motion/CustomCursor";
-import { CartFlyOverlay } from "@/components/motion/CartFlyOverlay";
-import { AmbientPlayerProvider } from "@/components/audio/ambient-player.context";
-import { PlayerMount } from "@/components/audio/PlayerMount";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -121,16 +114,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[hsl(50,20%,98%)]">
-        <AmbientPlayerProvider>
-          <SmoothScroll>
-            <CustomCursor />
-            <CartFlyOverlay />
-            <SiteHeader />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-            <PlayerMount />
-          </SmoothScroll>
-        </AmbientPlayerProvider>
+        {children}
         {/* Vercel Analytics — cookieless, no consent banner required under UK GDPR/PECR.
             Only sends data from production deployments; silent in dev and preview. */}
         <Analytics />
