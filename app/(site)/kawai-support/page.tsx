@@ -4,19 +4,16 @@ import { Award, HelpCircle, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { ModelChip } from "@/components/shop/ModelChip";
-import {
-  kawaiSeriesOrder,
-  getCurrentModelsBySeries,
-  getLegacyModelsBySeries,
-  SERIES_LABELS,
-  type KawaiSeries,
-} from "@/data/models";
+import { SERIES_LABELS, type KawaiSeries } from "@/data/models";
+import { getKawaiModels } from "@/lib/sanity/data";
 
 export const metadata: Metadata = {
   title: "Kawai Support Hub — Official UK Service Partner",
   description:
     "WDGreenhill is officially recommended by Kawai UK for digital piano servicing, spare parts, and non-warranty repairs. Find parts and support for all Kawai models — current and legacy.",
 };
+
+export const revalidate = 60;
 
 // Series that have at least one current model
 const CURRENT_SERIES: KawaiSeries[] = ["CA", "CN", "ES", "KDP", "MP", "VPC", "NV", "DG", "K"];
@@ -25,7 +22,13 @@ const LEGACY_ONLY_SERIES: KawaiSeries[] = ["CL", "CS"];
 // Series with both current and legacy (show legacy group separately)
 const MIXED_SERIES: KawaiSeries[] = ["CA", "CN", "ES", "KDP", "MP"];
 
-export default function KawaiSupportPage() {
+export default async function KawaiSupportPage() {
+  const models = await getKawaiModels();
+  const currentBySeries = (s: KawaiSeries) =>
+    models.filter((m) => m.series === s && m.status === "current");
+  const legacyBySeries = (s: KawaiSeries) =>
+    models.filter((m) => m.series === s && m.status === "legacy");
+
   return (
     <div className="min-h-screen pt-28 pb-24">
       <div className="max-w-7xl mx-auto px-6">
@@ -87,15 +90,15 @@ export default function KawaiSupportPage() {
 
           <div className="space-y-8">
             {CURRENT_SERIES.map((series) => {
-              const models = getCurrentModelsBySeries(series);
-              if (models.length === 0) return null;
+              const seriesModels = currentBySeries(series);
+              if (seriesModels.length === 0) return null;
               return (
                 <div key={series}>
                   <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[hsl(38,93%,50%)] mb-3">
                     {SERIES_LABELS[series] ?? `${series} Series`}
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {models.map((model) => (
+                    {seriesModels.map((model) => (
                       <ModelChip key={model.slug} model={model} />
                     ))}
                   </div>
@@ -115,15 +118,15 @@ export default function KawaiSupportPage() {
           <div className="space-y-8">
             {/* Series that have legacy entries (from current-series or legacy-only) */}
             {[...MIXED_SERIES, "VPC", ...LEGACY_ONLY_SERIES].map((series) => {
-              const models = getLegacyModelsBySeries(series as KawaiSeries);
-              if (models.length === 0) return null;
+              const seriesModels = legacyBySeries(series as KawaiSeries);
+              if (seriesModels.length === 0) return null;
               return (
                 <div key={`legacy-${series}`}>
                   <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[hsl(240,4%,56%)] mb-3">
                     {SERIES_LABELS[series as KawaiSeries] ?? `${series} Series`}
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {models
+                    {seriesModels
                       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
                       .map((model) => (
                         <ModelChip key={model.slug} model={model} />

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { stripe } from "@/lib/stripe";
-import { getProductBySku } from "@/data/products";
+import { getProductBySku } from "@/lib/sanity/data";
 import { shippingZones } from "@/data/shipping";
 
 const cartItemSchema = z.object({
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   }[] = [];
 
   for (const item of items) {
-    const product = getProductBySku(item.sku);
+    const product = await getProductBySku(item.sku);
     if (!product) {
       return Response.json({ error: `Unknown product SKU: ${item.sku}` }, { status: 422 });
     }

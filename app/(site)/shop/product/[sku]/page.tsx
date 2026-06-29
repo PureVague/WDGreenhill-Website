@@ -1,21 +1,24 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getProductBySlug, products } from "@/data/products";
+import { getProductBySlug, getRelatedProducts, getProducts } from "@/lib/sanity/data";
 import { ProductPageClient } from "./ProductPageClient";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.wdgreenhill.com";
+
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ sku: string }>;
 }
 
 export async function generateStaticParams() {
+  const products = await getProducts();
   return products.map((p) => ({ sku: p.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { sku } = await params;
-  const product = getProductBySlug(sku);
+  const product = await getProductBySlug(sku);
   if (!product) return {};
 
   return {
@@ -33,8 +36,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { sku } = await params;
-  const product = getProductBySlug(sku);
+  const product = await getProductBySlug(sku);
   if (!product) notFound();
+
+  const related = await getRelatedProducts(product);
 
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -68,7 +73,7 @@ export default async function ProductPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
-      <ProductPageClient sku={sku} />
+      <ProductPageClient product={product} related={related} />
     </>
   );
 }

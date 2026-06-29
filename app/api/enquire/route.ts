@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { products } from "@/data/products";
+import { getProductBySku } from "@/lib/sanity/data";
 
 const enquireSchema = z.object({
   name:         z.string().min(2).max(100),
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   const { name, email, phone, quantity, message, sku, productTitle, productUrl } = parsed.data;
 
   // Server-side: confirm SKU actually exists in the product catalogue
-  const product = products.find((p) => p.sku === sku);
+  const product = await getProductBySku(sku);
   if (!product) {
     return Response.json({ ok: false, error: "Unknown SKU" }, { status: 422 });
   }

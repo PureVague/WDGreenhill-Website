@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { getCategoryBySlug } from "@/data/categories";
-import { getProductsByCategory } from "@/data/products";
+import { getCategoryBySlug, getProductsByCategory } from "@/lib/sanity/data";
+
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ category: string }>;
@@ -12,7 +13,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
-  const cat = getCategoryBySlug(category);
+  const cat = await getCategoryBySlug(category);
   if (!cat) return {};
   return {
     title: `${cat.name} — Digital Piano Parts`,
@@ -22,10 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CategoryPage({ params }: Props) {
   const { category } = await params;
-  const cat = getCategoryBySlug(category);
+  const cat = await getCategoryBySlug(category);
   if (!cat) notFound();
 
-  const products = getProductsByCategory(category);
+  const products = await getProductsByCategory(category);
 
   return (
     <div className="min-h-screen pt-28 pb-24">

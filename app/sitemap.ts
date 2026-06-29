@@ -1,12 +1,18 @@
 import type { MetadataRoute } from "next";
-import { products } from "@/data/products";
-import { brands } from "@/data/brands";
-import { categories } from "@/data/categories";
-import { kawaiModels } from "@/data/models";
+import { getProducts, getBrands, getCategories, getKawaiModels } from "@/lib/sanity/data";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.wdgreenhill.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 60;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [products, brands, categories, kawaiModels] = await Promise.all([
+    getProducts(),
+    getBrands(),
+    getCategories(),
+    getKawaiModels(),
+  ]);
+
   const staticPages = [
     { url: SITE_URL, changeFrequency: "weekly" as const, priority: 1 },
     { url: `${SITE_URL}/shop`, changeFrequency: "daily" as const, priority: 0.9 },

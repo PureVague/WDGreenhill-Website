@@ -12,13 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SectionHeading } from "@/components/site/SectionHeading";
-import { brands } from "@/data/brands";
-import { kawaiModels } from "@/data/models";
-
-const BRANDS_FOR_FORM = [
-  ...brands.map((b) => b.name).sort((a, b) => a.localeCompare(b)),
-  "Other",
-];
+import type { Brand } from "@/data/brands";
+import type { KawaiModel } from "@/data/models";
 
 const schema = z
   .object({
@@ -50,7 +45,17 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
-export function RepairRequestClient() {
+interface RepairRequestClientProps {
+  brands: Brand[];
+  kawaiModels: KawaiModel[];
+}
+
+export function RepairRequestClient({ brands, kawaiModels }: RepairRequestClientProps) {
+  const BRANDS_FOR_FORM = [
+    ...brands.map((b) => b.name).sort((a, b) => a.localeCompare(b)),
+    "Other",
+  ];
+
   const [submitted, setSubmitted] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState("");

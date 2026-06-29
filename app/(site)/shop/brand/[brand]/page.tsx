@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { getBrandBySlug } from "@/data/brands";
-import { getProductsByBrand } from "@/data/products";
+import { getBrandBySlug, getProductsByBrand } from "@/lib/sanity/data";
+
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ brand: string }>;
@@ -12,7 +13,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { brand } = await params;
-  const b = getBrandBySlug(brand);
+  const b = await getBrandBySlug(brand);
   if (!b) return {};
   return {
     title: `${b.name} Parts — Digital Piano & Organ Spares`,
@@ -22,10 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BrandPage({ params }: Props) {
   const { brand } = await params;
-  const b = getBrandBySlug(brand);
+  const b = await getBrandBySlug(brand);
   if (!b) notFound();
 
-  const products = getProductsByBrand(brand);
+  const products = await getProductsByBrand(brand);
 
   return (
     <div className="min-h-screen pt-28 pb-24">

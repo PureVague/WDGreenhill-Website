@@ -3,10 +3,16 @@
 import { useState, useMemo } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { products } from "@/data/products";
-import { categories } from "@/data/categories";
-import { brands } from "@/data/brands";
+import type { Product } from "@/data/products";
+import type { Category } from "@/data/categories";
+import type { Brand } from "@/data/brands";
 import { cn } from "@/lib/utils";
+
+interface ShopSearchProps {
+  products: Product[];
+  categories: Category[];
+  brands: Brand[];
+}
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "name-asc";
 
@@ -17,7 +23,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "name-asc", label: "Name A–Z" },
 ];
 
-export function ShopSearch() {
+export function ShopSearch({ products, categories, brands }: ShopSearchProps) {
   const [query, setQuery] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");

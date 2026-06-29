@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { brands } from "@/data/brands";
+import type { Brand } from "@/data/brands";
 import { BrandSuggestModal } from "./BrandSuggestModal";
 
-export function BrandsGrid() {
+export function BrandsGrid({ brands }: { brands: Brand[] }) {
   const sortedBrands = [...brands].sort((a, b) => a.name.localeCompare(b.name));
   const [isModalOpen, setIsModalOpen] = useState(false);
 

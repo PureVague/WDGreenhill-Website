@@ -1,6 +1,5 @@
 "use client";
 
-import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
@@ -11,22 +10,17 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { EnquireModal } from "@/components/shop/EnquireModal";
 import { useCartStore } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/format";
-import { getProductBySlug, getRelatedProducts } from "@/data/products";
 import type { Product } from "@/data/products";
 import { cn } from "@/lib/utils";
 
 const TABS = ["Description", "Specifications", "Compatibility", "Shipping & Returns"] as const;
 type Tab = (typeof TABS)[number];
 
-export function ProductPageClient({ sku }: { sku: string }) {
-  const product = getProductBySlug(sku);
-  if (!product) notFound();
-
+export function ProductPageClient({ product, related }: { product: Product; related: Product[] }) {
   const [activeTab, setActiveTab] = useState<Tab>("Description");
   const [quantity, setQuantity] = useState(1);
   const [isEnquireOpen, setIsEnquireOpen] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
-  const related = getRelatedProducts(product);
   const inStock = product.stock > 0;
 
   const handleAddToCart = () => {

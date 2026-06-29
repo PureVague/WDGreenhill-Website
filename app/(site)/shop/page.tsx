@@ -3,8 +3,7 @@ import Link from "next/link";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { BrandTile } from "@/components/shop/BrandTile";
 import { ShopSearch } from "@/components/shop/ShopSearch";
-import { brands } from "@/data/brands";
-import { categories } from "@/data/categories";
+import { getBrands, getCategories, getProducts } from "@/lib/sanity/data";
 import { Cpu, Zap, CircuitBoard, SlidersHorizontal, Music2, Footprints, Speaker, Plug, CircleDot, ToggleLeft, Box, Droplets, BookOpen, Wrench } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -12,6 +11,8 @@ export const metadata: Metadata = {
   description:
     "Browse 1,000s of replacement parts for digital pianos, keyboards, and organs. Filter by category or by make. Kawai, Yamaha, Roland, Hammond, Wurlitzer, and more.",
 };
+
+export const revalidate = 60;
 
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   semiconductors: Cpu,
@@ -30,7 +31,13 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   "service-manuals": Wrench,
 };
 
-export default function ShopPage() {
+export default async function ShopPage() {
+  const [brands, categories, products] = await Promise.all([
+    getBrands(),
+    getCategories(),
+    getProducts(),
+  ]);
+
   return (
     <div className="min-h-screen pt-28 pb-24">
       <div className="max-w-7xl mx-auto px-6">
@@ -84,7 +91,7 @@ export default function ShopPage() {
         </section>
 
         {/* Live search + filter across all products */}
-        <ShopSearch />
+        <ShopSearch products={products} categories={categories} brands={brands} />
       </div>
     </div>
   );

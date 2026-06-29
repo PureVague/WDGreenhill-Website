@@ -48,6 +48,16 @@ export const productBySkuQuery = groq`
   *[_type == "product" && slug.current == $slug][0] { ${PRODUCT_FIELDS} }
 `;
 
+export const productByExactSkuQuery = groq`
+  *[_type == "product" && sku == $sku][0] { ${PRODUCT_FIELDS} }
+`;
+
+// Related: same brand, excluding the current product.
+export const relatedProductsQuery = groq`
+  *[_type == "product" && brand->slug.current == $brand && slug.current != $slug]
+    | order(title asc)[0...4] { ${PRODUCT_FIELDS} }
+`;
+
 export const productsByBrandQuery = groq`
   *[_type == "product" && brand->slug.current == $brand] | order(title asc) { ${PRODUCT_FIELDS} }
 `;

@@ -3,12 +3,15 @@ import Link from "next/link";
 import { CheckCircle2, Phone, Wrench, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandsGrid } from "@/components/repairs/BrandsGrid";
+import { getBrands } from "@/lib/sanity/data";
 
 export const metadata: Metadata = {
   title: "Digital Piano Repairs — Every Make & Model",
   description:
     "WD Greenhill & Co repairs digital pianos, keyboards, and organs from every major manufacturer. 45 years of specialist experience. Official Kawai UK service partner.",
 };
+
+export const revalidate = 60;
 
 const WHAT_WE_FIX = [
   "Dead, stuck, or noisy keys",
@@ -33,7 +36,8 @@ const PROCESS_STEPS = [
   { n: "05", title: "Return", body: "Instrument returned fully tested. UK courier collection and return available, or you can ship direct." },
 ];
 
-export default function RepairsPage() {
+export default async function RepairsPage() {
+  const brands = await getBrands();
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -83,7 +87,7 @@ export default function RepairsPage() {
             including vintage and discontinued models. If the parts exist, we can source them.
           </p>
 
-          <BrandsGrid />
+          <BrandsGrid brands={brands} />
         </div>
       </section>
 

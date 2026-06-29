@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SectionHeading } from "@/components/site/SectionHeading";
-import { kawaiModels } from "@/data/models";
+import type { KawaiModel } from "@/data/models";
 
 const schema = z.object({
   name: z.string().min(2, "Please enter your full name"),
@@ -24,7 +24,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function RequestClient() {
+export function RequestClient({ kawaiModels }: { kawaiModels: KawaiModel[] }) {
   const [submitted, setSubmitted] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({

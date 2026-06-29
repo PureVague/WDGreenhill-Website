@@ -6,7 +6,7 @@ import { Search, FileText, Book, Wrench } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "@/components/site/SectionHeading";
-import { manuals, searchManuals, type ManualType } from "@/data/manuals";
+import type { Manual, ManualType } from "@/data/manuals";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +22,19 @@ const TYPE_ICONS: Record<ManualType, React.ComponentType<{ className?: string }>
   schematic: FileText,
 };
 
-export function ManualsClient() {
+export function ManualsClient({ manuals }: { manuals: Manual[] }) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<ManualType | "all">("all");
 
-  const filtered = (query.trim() ? searchManuals(query) : manuals).filter(
+  const q = query.trim().toLowerCase();
+  const searched = q
+    ? manuals.filter(
+        (m) =>
+          m.brand.toLowerCase().includes(q) ||
+          m.model.toLowerCase().includes(q),
+      )
+    : manuals;
+  const filtered = searched.filter(
     (m) => typeFilter === "all" || m.type === typeFilter
   );
 

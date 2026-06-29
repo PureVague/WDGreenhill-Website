@@ -4,9 +4,13 @@ import Link from "next/link";
 import { FileText, Wrench, CheckCircle2, ChevronRight, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { getModelBySlug, kawaiModels, SERIES_LABELS } from "@/data/models";
-import { products } from "@/data/products";
-import { manuals } from "@/data/manuals";
+import { SERIES_LABELS } from "@/data/models";
+import {
+  getKawaiModelBySlug,
+  getKawaiModels,
+  getProductsByKawaiModel,
+  getManuals,
+} from "@/lib/sanity/data";
 
 interface Props {
   params: Promise<{ model: string }>;
@@ -14,13 +18,16 @@ interface Props {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.wdgreenhill.com";
 
+export const revalidate = 60;
+
 export async function generateStaticParams() {
-  return kawaiModels.map((m) => ({ model: m.slug }));
+  const models = await getKawaiModels();
+  return models.map((m) => ({ model: m.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { model } = await params;
-  const m = getModelBySlug(model);
+  const m = await getKawaiModelBySlug(model);
   if (!m) return {};
   return {
     title: `Kawai ${m.name} — Service, Repairs & Parts | WDGreenhill & Co`,
@@ -34,18 +41,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function KawaiModelPage({ params }: Props) {
   const { model: slug } = await params;
-  const m = getModelBySlug(slug);
+  const m = await getKawaiModelBySlug(slug);
   if (!m) notFound();
 
-  const modelProducts = products.filter((p) => p.compatibleModels.includes(slug));
-  const modelManuals  = manuals.filter(
+  const [modelProducts, allManuals, predecessor, successor] = await Promise.all([
+    getProductsByKawaiModel(slug),
+    getManuals(),
+    m.predecessor ? getKawaiModelBySlug(m.predecessor) : Promise.resolve(null),
+    m.successor ? getKawaiModelBySlug(m.successor) : Promise.resolve(null),
+  ]);
+
+  const modelManuals = allManuals.filter(
     (man) =>
       man.brand.toLowerCase() === "kawai" &&
       man.model.toLowerCase().includes(m.name.toLowerCase()),
   );
-
-  const predecessor = m.predecessor ? getModelBySlug(m.predecessor) : undefined;
-  const successor   = m.successor   ? getModelBySlug(m.successor)   : undefined;
 
   const isCurrent = m.status === "current";
   const seriesLabel = SERIES_LABELS[m.series] ?? `${m.series} Series`;
