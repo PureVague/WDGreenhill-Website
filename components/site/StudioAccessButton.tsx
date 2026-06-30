@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { Settings } from "lucide-react";
 
 /**
- * Floating admin shortcut → /studio. Bottom-LEFT so it never collides with the
- * music player (bottom-right). Hidden on the studio routes themselves.
+ * Floating admin shortcut → /studio, pinned bottom-left.
+ * Hidden on the studio routes themselves.
  */
 export function StudioAccessButton() {
   const pathname = usePathname();
