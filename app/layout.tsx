@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { StudioAccessButton } from "@/components/site/StudioAccessButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -115,6 +116,8 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[hsl(50,20%,98%)]">
         {children}
+        {/* Floating admin shortcut to /studio (bottom-left; self-hides on /studio). */}
+        <StudioAccessButton />
         {/* Vercel Analytics — cookieless, no consent banner required under UK GDPR/PECR.
             Only sends data from production deployments; silent in dev and preview. */}
         <Analytics />
