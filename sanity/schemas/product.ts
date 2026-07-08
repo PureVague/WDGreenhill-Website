@@ -87,6 +87,43 @@ export const product = defineType({
       initialValue: false,
     }),
     defineField({
+      name: "weightGrams",
+      title: "Weight (grams)",
+      type: "number",
+      description: "Shipping weight in grams. A small chip ~5g, a PCB ~200g, a cabinet panel ~500g+.",
+      initialValue: 10,
+      validation: (Rule) => Rule.required().min(0),
+    }),
+    defineField({
+      name: "dimensions",
+      title: "Dimensions (cm)",
+      type: "object",
+      description: "Optional. Any single dimension over the configured maximum triggers quote-only shipping.",
+      options: { collapsible: true, collapsed: true },
+      fields: [
+        { name: "lengthCm", title: "Length (cm)", type: "number", validation: (R) => R.min(0) },
+        { name: "widthCm", title: "Width (cm)", type: "number", validation: (R) => R.min(0) },
+        { name: "heightCm", title: "Height (cm)", type: "number", validation: (R) => R.min(0) },
+      ],
+    }),
+    defineField({
+      name: "shippingClass",
+      title: "Shipping class",
+      type: "string",
+      description:
+        "standard = normal weight-based shipping · quote-only = always ship by quote · digital = no shipping (downloadable).",
+      options: {
+        layout: "radio",
+        list: [
+          { title: "Standard", value: "standard" },
+          { title: "Quote only", value: "quote-only" },
+          { title: "Digital (no shipping)", value: "digital" },
+        ],
+      },
+      initialValue: "standard",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
       name: "images",
       title: "Images",
       type: "array",
