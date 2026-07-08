@@ -66,3 +66,17 @@ export interface SanityManual {
   year: string | null;
   description: string | null;
 }
+
+export interface ProductShipping {
+  sku: string;
+  weightGrams: number | null;
+  dimensions: { lengthCm?: number; widthCm?: number; heightCm?: number } | null;
+  shippingClass: "standard" | "quote-only" | "digital" | null;
+}
+
+export interface CheckoutProduct extends ProductShipping {
+  title: string;
+  price: number;
+  stock: number;
+  brand: string | null;
+}

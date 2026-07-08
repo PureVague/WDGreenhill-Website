@@ -1,20 +1,83 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Trash2, Plus, Minus, ShoppingCart, ArrowRight } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/format";
+import {
+  calculateShipping,
+  totalCartWeight,
+  type ShippingItem,
+  type ShippingSettings,
+} from "@/lib/shipping/calculate";
+import type { NormalizedProductShipping } from "@/lib/sanity/data";
+import { POPULAR_COUNTRIES, ALL_COUNTRIES } from "@/lib/shipping/countries";
+import { QuoteRequestModal } from "@/components/checkout/QuoteRequestModal";
 
-export function CartClient() {
+interface CartClientProps {
+  shippingSettings: ShippingSettings | null;
+  productShipping: NormalizedProductShipping[];
+}
+
+export function CartClient({ shippingSettings, productShipping }: CartClientProps) {
   const { items, removeItem, updateQuantity, subtotal, clearCart } = useCartStore();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [country, setCountry] = useState("GB");
+  const [showAllCountries, setShowAllCountries] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
 
   const sub = subtotal();
   const vat = sub * 0.2;
-  const total = sub + vat;
+
+  const shipMap = useMemo(
+    () => new Map(productShipping.map((p) => [p.sku, p])),
+    [productShipping],
+  );
+
+  const shipItems: ShippingItem[] = useMemo(
+    () =>
+      items.map((ci) => {
+        const s = shipMap.get(ci.sku);
+        return {
+          sku: ci.sku,
+          quantity: ci.quantity,
+          weightGrams: s?.weightGrams ?? 10,
+          dimensions: s?.dimensions,
+          shippingClass: s?.shippingClass ?? "standard",
+        };
+      }),
+    [items, shipMap],
+  );
+
+  const result = useMemo(
+    () =>
+      shippingSettings && shipItems.length > 0
+        ? calculateShipping({ items: shipItems, destinationCountryCode: country, shippingSettings, subtotalGBP: sub })
+        : null,
+    [shippingSettings, shipItems, country, sub],
+  );
+
+  const totalWeightGrams = totalCartWeight(shipItems);
+  const totalKg = (totalWeightGrams / 1000).toFixed(2);
+
+  const isQuote = result?.kind === "quote-required";
+  const isDigital = result?.kind === "no-shipping";
+  const shippingCost = result?.kind === "calculated" ? result.costGBP : 0;
+  const total = sub + vat + shippingCost;
+
+  const countryList = showAllCountries ? ALL_COUNTRIES : POPULAR_COUNTRIES;
+  const isUK = country === "GB";
+  const messaging = shippingSettings?.messaging;
+
+  const quoteItems = items.map((ci) => ({
+    sku: ci.sku,
+    title: ci.title,
+    quantity: ci.quantity,
+    weightGrams: shipMap.get(ci.sku)?.weightGrams ?? 10,
+  }));
 
   const handleCheckout = async () => {
     setCheckingOut(true);
@@ -22,11 +85,14 @@ export function CartClient() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: items.map((i) => ({ sku: i.sku, quantity: i.quantity })),
-        }),
+        body: JSON.stringify({ items: items.map((i) => ({ sku: i.sku, quantity: i.quantity })) }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.quoteRequired) {
+        setCheckingOut(false);
+        setQuoteOpen(true);
+        return;
+      }
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -126,6 +192,33 @@ export function CartClient() {
           <div className="lg:col-span-1">
             <div className="sticky top-28 p-6 rounded-2xl border border-[hsl(240,6%,88%)] bg-white">
               <h2 className="font-display font-bold text-xl mb-6">Order Summary</h2>
+
+              {/* Country selector */}
+              <div className="mb-5">
+                <label htmlFor="ship-country" className="block text-xs font-bold uppercase tracking-wider text-[hsl(240,4%,46%)] mb-2">
+                  Deliver to
+                </label>
+                <select
+                  id="ship-country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full h-10 px-3 rounded-lg border border-[hsl(240,6%,88%)] bg-white text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(245,85%,58%)]"
+                >
+                  {countryList.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+                {!showAllCountries && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllCountries(true)}
+                    className="text-xs text-[hsl(245,85%,58%)] hover:underline mt-1.5"
+                  >
+                    See all countries
+                  </button>
+                )}
+              </div>
+
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-[hsl(240,4%,46%)]">Subtotal (ex. VAT)</span>
@@ -135,31 +228,67 @@ export function CartClient() {
                   <span className="text-[hsl(240,4%,46%)]">VAT (20%)</span>
                   <span className="font-semibold">{formatPrice(vat)}</span>
                 </div>
-                <div className="flex justify-between">
+
+                {/* Shipping line */}
+                <div className="flex justify-between items-start">
                   <span className="text-[hsl(240,4%,46%)]">Shipping</span>
-                  <span className="text-[hsl(240,4%,46%)]">Calculated at checkout</span>
+                  <span className="font-semibold text-right">
+                    {!result && "Calculated at checkout"}
+                    {result?.kind === "calculated" && formatPrice(result.costGBP)}
+                    {result?.kind === "free" && <span className="text-emerald-600">Free</span>}
+                    {isDigital && <span className="text-[hsl(240,4%,46%)] font-normal">Digital delivery — no shipping</span>}
+                    {isQuote && <span className="text-[hsl(38,93%,45%)] font-normal">By quote</span>}
+                  </span>
                 </div>
+
+                {/* Weight transparency */}
+                {!isDigital && totalWeightGrams > 0 && (
+                  <p
+                    className="flex items-center gap-1 text-xs text-[hsl(240,4%,60%)]"
+                    title={`Total shippable weight: ${totalKg}kg`}
+                  >
+                    <Info className="w-3 h-3" />
+                    Total weight: {totalKg}kg
+                  </p>
+                )}
+
                 <div className="border-t border-[hsl(240,6%,88%)] pt-3 flex justify-between font-bold text-base">
-                  <span>Estimated Total</span>
+                  <span>{isQuote ? "Subtotal + VAT" : "Estimated Total"}</span>
                   <span>{formatPrice(total)}</span>
                 </div>
               </div>
 
-              <Button
-                size="lg"
-                className="w-full mt-6 gap-2"
-                onClick={handleCheckout}
-                disabled={checkingOut}
-              >
-                {checkingOut ? "Redirecting…" : "Proceed to Checkout"}
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+              {/* Quote-required notice */}
+              {isQuote && (
+                <div className="mt-4 rounded-lg bg-[hsl(38,93%,50%)]/10 border border-[hsl(38,93%,50%)]/30 px-4 py-3 text-xs text-[hsl(38,50%,30%)] leading-relaxed">
+                  {messaging?.quoteRequiredMessage ??
+                    "One or more items are large or heavy. We'll send you a shipping quote by email — no payment is taken now."}
+                </div>
+              )}
 
-              <p className="text-xs text-[hsl(240,4%,60%)] mt-4 text-center">
-                Secure checkout via Stripe. Free UK shipping on orders over £150 ex. VAT.
-              </p>
+              {/* Primary action */}
+              {isQuote ? (
+                <Button size="lg" className="w-full mt-5 gap-2" onClick={() => setQuoteOpen(true)}>
+                  Request Shipping Quote
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button size="lg" className="w-full mt-5 gap-2" onClick={handleCheckout} disabled={checkingOut}>
+                  {checkingOut ? "Redirecting…" : "Proceed to Checkout"}
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              )}
 
-              {/* Trust marks */}
+              {/* Zone messaging */}
+              {isUK && messaging?.ukVatNote && (
+                <p className="text-xs text-[hsl(240,4%,60%)] mt-4 text-center">{messaging.ukVatNote}</p>
+              )}
+              {!isUK && !isDigital && messaging?.internationalCustomsNotice && (
+                <p className="text-xs text-[hsl(240,4%,60%)] mt-4 leading-relaxed">
+                  {messaging.internationalCustomsNotice}
+                </p>
+              )}
+
               <div className="mt-6 pt-6 border-t border-[hsl(240,6%,88%)]">
                 <p className="text-xs text-[hsl(240,4%,56%)] text-center">
                   🔒 SSL encrypted · Stripe payments · 30-day returns
@@ -169,6 +298,14 @@ export function CartClient() {
           </div>
         </div>
       </div>
+
+      <QuoteRequestModal
+        isOpen={quoteOpen}
+        onClose={() => setQuoteOpen(false)}
+        items={quoteItems}
+        totalWeightGrams={totalWeightGrams}
+        defaultCountry={country}
+      />
     </div>
   );
 }

@@ -111,3 +111,27 @@ export const manualsQuery = groq`
     _id, "brandName": brand->name, model, type, format, price, stockCount, year, description
   }
 `;
+
+// ── Shipping ────────────────────────────────────────────────────────────────
+
+export const shippingSettingsQuery = groq`
+  *[_id == "shippingSettings"][0]{
+    zones[]{ zoneKey, displayName, baseFeeGBP, perKgAfterGBP, freeShippingThresholdGBP },
+    quoteThresholds{ perItemMaxGrams, perItemMaxDimensionCm, cartTotalMaxGrams },
+    messaging{ quoteRequiredMessage, internationalCustomsNotice, ukVatNote },
+    countryZoneMap[]{ countryCode, zoneKey }
+  }
+`;
+
+// Shipping fields for every product (small catalogue) — used by the cart client.
+export const productsShippingQuery = groq`
+  *[_type == "product"]{ sku, weightGrams, dimensions, shippingClass }
+`;
+
+// Everything checkout needs for a set of SKUs (price, stock + shipping).
+export const checkoutProductsBySkusQuery = groq`
+  *[_type == "product" && sku in $skus]{
+    sku, title, price, stock, "brand": brand->slug.current,
+    weightGrams, dimensions, shippingClass
+  }
+`;

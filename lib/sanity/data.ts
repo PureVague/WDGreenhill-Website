@@ -15,6 +15,9 @@ import {
   kawaiModelsQuery,
   kawaiModelBySlugQuery,
   manualsQuery,
+  shippingSettingsQuery,
+  productsShippingQuery,
+  checkoutProductsBySkusQuery,
 } from "./queries";
 import type {
   SanityProduct,
@@ -22,12 +25,15 @@ import type {
   SanityCategory,
   SanityKawaiModel,
   SanityManual,
+  ProductShipping,
+  CheckoutProduct,
 } from "./types";
 import type { Product } from "@/data/products";
 import type { Brand } from "@/data/brands";
 import type { Category } from "@/data/categories";
 import type { KawaiModel } from "@/data/models";
 import type { Manual, ManualType, ManualFormat } from "@/data/manuals";
+import type { ShippingSettings, ShippingClass } from "@/lib/shipping/calculate";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -231,4 +237,47 @@ export async function getKawaiModelBySlug(slug: string): Promise<KawaiModel | nu
 export async function getManuals(): Promise<Manual[]> {
   const data = await safeFetch<SanityManual[]>(manualsQuery, {}, []);
   return data.map(mapManual);
+}
+
+// ── Shipping ─────────────────────────────────────────────────────────────────
+
+export interface NormalizedProductShipping {
+  sku: string;
+  weightGrams: number;
+  dimensions?: { lengthCm?: number; widthCm?: number; heightCm?: number };
+  shippingClass: ShippingClass;
+}
+
+function normalizeShipping(p: ProductShipping): NormalizedProductShipping {
+  return {
+    sku: p.sku,
+    weightGrams: typeof p.weightGrams === "number" ? p.weightGrams : 10,
+    dimensions: p.dimensions ?? undefined,
+    shippingClass: (p.shippingClass ?? "standard") as ShippingClass,
+  };
+}
+
+export async function getShippingSettings(): Promise<ShippingSettings | null> {
+  const data = await safeFetch<ShippingSettings | null>(shippingSettingsQuery, {}, null);
+  if (!data) return null;
+  return {
+    zones: (data.zones ?? []).filter(Boolean),
+    quoteThresholds: data.quoteThresholds ?? {
+      perItemMaxGrams: 2000,
+      perItemMaxDimensionCm: 60,
+      cartTotalMaxGrams: 10000,
+    },
+    countryZoneMap: (data.countryZoneMap ?? []).filter((c) => c && c.countryCode),
+    messaging: data.messaging,
+  };
+}
+
+export async function getProductsShipping(): Promise<NormalizedProductShipping[]> {
+  const data = await safeFetch<ProductShipping[]>(productsShippingQuery, {}, []);
+  return data.map(normalizeShipping);
+}
+
+export async function getCheckoutProductsBySkus(skus: string[]): Promise<CheckoutProduct[]> {
+  if (skus.length === 0) return [];
+  return safeFetch<CheckoutProduct[]>(checkoutProductsBySkusQuery, { skus }, []);
 }
