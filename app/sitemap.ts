@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/kawai-support/faq`, changeFrequency: "monthly" as const, priority: 0.7 },
     { url: `${SITE_URL}/repairs/request`, changeFrequency: "monthly" as const, priority: 0.7 },
     { url: `${SITE_URL}/manuals`, changeFrequency: "weekly" as const, priority: 0.8 },
+    { url: `${SITE_URL}/shipping-policy`, changeFrequency: "monthly" as const, priority: 0.4 },
     { url: `${SITE_URL}/about`, changeFrequency: "monthly" as const, priority: 0.6 },
     { url: `${SITE_URL}/contact`, changeFrequency: "monthly" as const, priority: 0.7 },
     { url: `${SITE_URL}/terms`, changeFrequency: "yearly" as const, priority: 0.3 },

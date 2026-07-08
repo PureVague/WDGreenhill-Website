@@ -28,6 +28,7 @@ export function CartClient({ shippingSettings, productShipping }: CartClientProp
   const [country, setCountry] = useState("GB");
   const [showAllCountries, setShowAllCountries] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
+  const [customsAccepted, setCustomsAccepted] = useState(false);
 
   const sub = subtotal();
   const vat = sub * 0.2;
@@ -70,7 +71,10 @@ export function CartClient({ shippingSettings, productShipping }: CartClientProp
 
   const countryList = showAllCountries ? ALL_COUNTRIES : POPULAR_COUNTRIES;
   const isUK = country === "GB";
+  const isInternational = !isUK && !isDigital;
   const messaging = shippingSettings?.messaging;
+  // International checkout is blocked until the customer acknowledges customs.
+  const checkoutBlocked = checkingOut || (isInternational && !isQuote && !customsAccepted);
 
   const quoteItems = items.map((ci) => ({
     sku: ci.sku,
@@ -266,6 +270,31 @@ export function CartClient({ shippingSettings, productShipping }: CartClientProp
                 </div>
               )}
 
+              {/* International customs notice + required acknowledgement */}
+              {isInternational && !isQuote && (
+                <div className="mt-4 rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
+                  <p className="text-xs text-[hsl(240,4%,40%)] leading-relaxed">
+                    {messaging?.internationalCustomsNotice ??
+                      "Import duty and VAT may be charged by your country's customs on arrival. These are your responsibility."}{" "}
+                    <Link href="/shipping-policy" className="text-[hsl(245,85%,58%)] underline underline-offset-2">
+                      See shipping policy
+                    </Link>
+                    .
+                  </p>
+                  <label className="flex items-start gap-2 mt-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customsAccepted}
+                      onChange={(e) => setCustomsAccepted(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-[hsl(240,6%,88%)] accent-[hsl(245,85%,58%)] flex-shrink-0"
+                    />
+                    <span className="text-xs font-medium text-[hsl(240,10%,20%)]">
+                      I understand I may be liable for local customs charges
+                    </span>
+                  </label>
+                </div>
+              )}
+
               {/* Primary action */}
               {isQuote ? (
                 <Button size="lg" className="w-full mt-5 gap-2" onClick={() => setQuoteOpen(true)}>
@@ -273,19 +302,16 @@ export function CartClient({ shippingSettings, productShipping }: CartClientProp
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button size="lg" className="w-full mt-5 gap-2" onClick={handleCheckout} disabled={checkingOut}>
+                <Button size="lg" className="w-full mt-5 gap-2" onClick={handleCheckout} disabled={checkoutBlocked}>
                   {checkingOut ? "Redirecting…" : "Proceed to Checkout"}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               )}
 
-              {/* Zone messaging */}
-              {isUK && messaging?.ukVatNote && (
-                <p className="text-xs text-[hsl(240,4%,60%)] mt-4 text-center">{messaging.ukVatNote}</p>
-              )}
-              {!isUK && !isDigital && messaging?.internationalCustomsNotice && (
-                <p className="text-xs text-[hsl(240,4%,60%)] mt-4 leading-relaxed">
-                  {messaging.internationalCustomsNotice}
+              {/* UK VAT note */}
+              {isUK && !isDigital && (
+                <p className="text-xs text-[hsl(240,4%,60%)] mt-4 text-center">
+                  {messaging?.ukVatNote ?? "UK prices include 20% VAT."}
                 </p>
               )}
 

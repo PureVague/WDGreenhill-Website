@@ -23,6 +23,7 @@ const SUPPORT_LINKS = [
 const COMPANY_LINKS = [
   { label: "About WDGreenhill", href: "/about" },
   { label: "Contact Us", href: "/contact" },
+  { label: "Shipping", href: "/shipping-policy" },
   { label: "Terms & Conditions", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy-policy" },
 ];
