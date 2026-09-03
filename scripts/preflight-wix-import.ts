@@ -49,6 +49,23 @@ const slugify = (s: string) =>
 // Normalised key for near-duplicate detection (strips separators + "and").
 const norm = (s: string) => s.toLowerCase().replace(/and/g, "").replace(/[^a-z0-9]/g, "");
 
+// ── Canonical copy for documents this script creates ────────────────────────
+
+/** Kawai is WDG's official service partner — rendered as a badge on brand pages. */
+const KAWAI_PARTNER_LABEL = "Official UK Service Partner";
+
+/** Placeholder blurb for model stubs nobody has written up yet. */
+const stubDescription = (code: string) => `Kawai ${code} — parts, service, and manuals stocked.`;
+
+/**
+ * Wording this script has used in the past. reconcile() rewrites a stub only
+ * when its description still matches one of these, so anything hand-edited in
+ * Studio is left alone.
+ */
+const SUPERSEDED_STUB_DESCRIPTIONS: ((code: string) => string)[] = [
+  (code) => `Kawai ${code} — service parts available.`,
+];
+
 const VALID_SERIES = ["ES", "KDP", "CN", "CA", "CL", "CS", "MP", "VPC", "NV", "DG", "K", "Other"];
 
 function seriesFor(model: string): string {
@@ -61,6 +78,60 @@ interface Meta {
   brands: string[];
   categories: { slug: string; name: string }[];
   compatibleModelsDetected: string[];
+}
+
+/**
+ * Bring documents that already exist in line with the canonical copy above.
+ *
+ * Both patches are deliberately conservative. The brand label is only rewritten
+ * when it actually differs, and a model stub's description is only rewritten
+ * when it still matches wording this script generated — so the real write-ups
+ * from the original migration, and anything Nigel edits in Studio, are never
+ * clobbered.
+ */
+async function reconcile(modelPlan: { code: string; slug: string }[]) {
+  console.log(`\n${DRY_RUN ? "RECONCILE (dry run)" : "RECONCILE"}`);
+
+  const kawai = await client.getDocument<{ partnerLabel?: string }>("brand-kawai");
+  if (!kawai) {
+    console.log("  brand-kawai not found — skipping partner label");
+  } else if (kawai.partnerLabel === KAWAI_PARTNER_LABEL) {
+    console.log(`  brand kawai: partnerLabel already "${KAWAI_PARTNER_LABEL}"`);
+  } else {
+    if (!DRY_RUN) {
+      await client.patch("brand-kawai").set({ partnerLabel: KAWAI_PARTNER_LABEL }).commit();
+    }
+    console.log(
+      `  brand kawai: partnerLabel "${kawai.partnerLabel ?? "—"}" -> "${KAWAI_PARTNER_LABEL}"`,
+    );
+  }
+
+  const stubs = await client.fetch<{ _id: string; name: string; shortDescription?: string }[]>(
+    `*[_type=="kawaiModel" && _id in $ids]{ _id, name, shortDescription }`,
+    { ids: modelPlan.map((m) => `kawaiModel-${m.slug}`) },
+  );
+
+  let updated = 0;
+  let preserved = 0;
+  for (const stub of stubs) {
+    const wanted = stubDescription(stub.name);
+    if (stub.shortDescription === wanted) continue;
+    const isOurs = SUPERSEDED_STUB_DESCRIPTIONS.some(
+      (fn) => fn(stub.name) === stub.shortDescription,
+    );
+    if (!isOurs) {
+      preserved++;
+      continue;
+    }
+    if (!DRY_RUN) await client.patch(stub._id).set({ shortDescription: wanted }).commit();
+    console.log(`  ${stub.name}: description -> "${wanted}"`);
+    updated++;
+  }
+  console.log(
+    `  ${updated} stub description${updated === 1 ? "" : "s"} ` +
+      `${DRY_RUN ? "would be " : ""}updated, ${preserved} hand-written ` +
+      `description${preserved === 1 ? "" : "s"} left untouched`,
+  );
 }
 
 async function main() {
@@ -155,6 +226,8 @@ async function main() {
     }
   }
 
+  await reconcile(modelPlan);
+
   if (DRY_RUN) {
     console.log(`\nDry run complete — nothing written.\n`);
     return;
@@ -171,7 +244,7 @@ async function main() {
       name: b.name,
       slug: { _type: "slug", current: b.slug },
       isPartner: isKawai,
-      ...(isKawai ? { partnerLabel: "Official UK Service Partner" } : {}),
+      ...(isKawai ? { partnerLabel: KAWAI_PARTNER_LABEL } : {}),
     });
     console.log(`Created brand: ${b.name}`);
   }
@@ -194,7 +267,7 @@ async function main() {
       slug: { _type: "slug", current: m.slug },
       series: m.series,
       status: "legacy",
-      shortDescription: `Kawai ${m.code} — service parts available.`,
+      shortDescription: stubDescription(m.code),
     });
     console.log(`Created kawaiModel stub: ${m.code} (${m.series})`);
   }
