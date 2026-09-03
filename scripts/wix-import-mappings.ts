@@ -20,3 +20,18 @@ export const CATEGORY_SLUG_ALIASES: Record<string, string> = {
 export function resolveCategorySlug(wixSlug: string): string {
   return CATEGORY_SLUG_ALIASES[wixSlug] ?? wixSlug;
 }
+
+/**
+ * Fallback category for products the Wix export left unfiled.
+ *
+ * Roughly 80 products across the catalogue have no category. Without this they
+ * would exist in Sanity but appear on no category page — present in search and
+ * on brand pages, yet effectively unbrowsable. Filing them here keeps them
+ * reachable, and gives Nigel a single list in Studio to work through.
+ */
+export const UNCATEGORISED = {
+  slug: "uncategorised",
+  name: "Uncategorised",
+  description:
+    "Parts not yet filed into a category. Browse by make, or search by part number.",
+} as const;

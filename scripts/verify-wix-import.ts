@@ -13,7 +13,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@sanity/client";
-import { resolveCategorySlug } from "./wix-import-mappings";
+import { UNCATEGORISED, resolveCategorySlug } from "./wix-import-mappings";
 
 // ── Load .env.local ──────────────────────────────────────────────────────────
 try {
@@ -164,6 +164,7 @@ async function main() {
   let linkAnnotations = 0;
   let markedSpans = 0;
   let imagesChecked = 0;
+  let uncategorised = 0;
 
   for (const doc of docs) {
     const src = bySku.get(doc.sku)!;
@@ -180,14 +181,17 @@ async function main() {
     // References: a null in a resolved array means the reference is dangling.
     if (doc.brand !== slugify(src.brand)) fail(`brand ${doc.brand} != ${slugify(src.brand)}`);
     const cats = doc.cats ?? [];
-    const wantCats = src.categories.map(resolveCategorySlug);
+    // Products the export left unfiled are filed under Uncategorised instead.
+    const resolved = src.categories.map(resolveCategorySlug);
+    const wantCats = resolved.length > 0 ? resolved : [UNCATEGORISED.slug];
     if (cats.some((c) => c === null)) fail(`a category reference does not resolve`);
     if (cats.length !== wantCats.length) {
-      fail(`${cats.length} categories, export has ${wantCats.length}`);
+      fail(`${cats.length} categories, expected ${wantCats.length}`);
     }
     for (const want of wantCats) {
       if (!cats.includes(want)) fail(`category ${want} missing`);
     }
+    if (resolved.length === 0) uncategorised++;
 
     const models = doc.models ?? [];
     if (models.some((m) => m === null)) fail(`a Kawai model reference does not resolve`);
@@ -244,6 +248,9 @@ async function main() {
   console.log(`  images            ${imagesChecked} (all assets resolve)`);
   console.log(`  link annotations  ${linkAnnotations}`);
   console.log(`  styled spans      ${markedSpans}`);
+  if (uncategorised > 0) {
+    console.log(`  uncategorised     ${uncategorised} (unfiled in the export, filed under Uncategorised)`);
+  }
   if (notImported.length > 0) {
     console.log(`  hidden in Wix     ${notImported.length} (not imported, as expected)`);
   }

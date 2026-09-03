@@ -13,7 +13,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@sanity/client";
-import { CATEGORY_SLUG_ALIASES, resolveCategorySlug } from "./wix-import-mappings";
+import { CATEGORY_SLUG_ALIASES, UNCATEGORISED, resolveCategorySlug } from "./wix-import-mappings";
 
 // ── Load .env.local ──────────────────────────────────────────────────────────
 try {
@@ -170,12 +170,15 @@ async function main() {
   for (const b of missingBrands) console.log(`  + ${b.slug.padEnd(20)} ${b.name}`);
 
   // ── Categories (aliased slugs resolve to existing docs, never duplicated) ──
+  // Uncategorised is not in the export — the importer files products the Wix
+  // data left unfiled into it, so it has to exist before an import runs.
+  const referencedCats = [...meta.categories, UNCATEGORISED];
   const aliased = meta.categories.filter((c) => CATEGORY_SLUG_ALIASES[c.slug]);
-  const missingCats = meta.categories
+  const missingCats = referencedCats
     .filter((c) => !CATEGORY_SLUG_ALIASES[c.slug])
     .filter((c) => !catSlugs.has(c.slug));
 
-  console.log(`\nCATEGORIES: ${meta.categories.length} referenced, ${missingCats.length} to create`);
+  console.log(`\nCATEGORIES: ${referencedCats.length} referenced, ${missingCats.length} to create`);
   for (const c of missingCats) console.log(`  + ${c.slug.padEnd(24)} ${c.name}`);
   if (aliased.length) {
     console.log(`\n  Aliased to existing categories (no duplicates created):`);
@@ -250,11 +253,13 @@ async function main() {
   }
 
   for (const c of missingCats) {
+    const description = "description" in c ? c.description : undefined;
     await client.createIfNotExists({
       _id: `category-${c.slug}`,
       _type: "category",
       name: c.name,
       slug: { _type: "slug", current: c.slug },
+      ...(description ? { description } : {}),
     });
     console.log(`Created category: ${c.name} (${c.slug})`);
   }
@@ -282,7 +287,7 @@ async function main() {
   const stillMissing = {
     brands: brandPlan.filter((b) => !bSet.has(b.slug)).map((b) => b.slug),
     // Aliased slugs must resolve to an existing canonical category.
-    categories: meta.categories
+    categories: referencedCats
       .filter((c) => !cSet.has(resolveCategorySlug(c.slug)))
       .map((c) => `${c.slug} -> ${resolveCategorySlug(c.slug)}`),
     models: modelPlan.filter((m) => !mSet.has(m.slug)).map((m) => m.slug),

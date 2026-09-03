@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Wix product import data — not committed, kept locally for reference
 wix-products-cleaned.json
+
+# Local backups of Sanity documents taken before destructive edits
+.wix-import-backup/

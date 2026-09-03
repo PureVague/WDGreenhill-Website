@@ -11,8 +11,9 @@
  *   --skip-images       create products without downloading their Wix image
  *   --include-hidden    also import products the Wix store had hidden
  *   --update-existing   patch price/stock/weight on SKUs already in Sanity
- *   --repair-images     re-upload images for products this script imported
- *                       without them (an image fetch can fail transiently)
+ *   --repair            fix products this script already imported: re-upload
+ *                       images that failed, and file unfiled ones under
+ *                       Uncategorised
  *   --concurrency=N     parallel image downloads (default 4)
  *
  * Run scripts/preflight-wix-import.ts first — this script references brands,
@@ -29,7 +30,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@sanity/client";
-import { resolveCategorySlug } from "./wix-import-mappings";
+import { UNCATEGORISED, resolveCategorySlug } from "./wix-import-mappings";
 
 // ── Load .env.local ──────────────────────────────────────────────────────────
 try {
@@ -63,7 +64,7 @@ const DRY_RUN = argv.includes("--dry-run");
 const SKIP_IMAGES = argv.includes("--skip-images") || DRY_RUN;
 const INCLUDE_HIDDEN = argv.includes("--include-hidden");
 const UPDATE_EXISTING = argv.includes("--update-existing");
-const REPAIR_IMAGES = argv.includes("--repair-images");
+const REPAIR = argv.includes("--repair");
 const CONCURRENCY = Math.max(
   1,
   Number(argv.find((a) => a.startsWith("--concurrency="))?.slice(14) ?? 4),
@@ -348,8 +349,21 @@ async function uploadImage(url: string, sku: string, index: number): Promise<str
 
 // ── Import ───────────────────────────────────────────────────────────────────
 
+/**
+ * Categories for a product, falling back to Uncategorised.
+ *
+ * A product with no category exists in the catalogue but appears on no
+ * category page. Filing the unfiled ones under Uncategorised keeps them
+ * browsable and gives Nigel one list to work through in Studio.
+ */
+function categoriesFor(p: WixProduct, ctx: Context): string[] {
+  const resolved = p.categories.map(resolveCategorySlug).filter((s) => ctx.catSlugs.has(s));
+  if (resolved.length > 0) return resolved;
+  return ctx.catSlugs.has(UNCATEGORISED.slug) ? [UNCATEGORISED.slug] : [];
+}
+
 function buildDoc(p: WixProduct, slug: string, assetIds: string[], ctx: Context) {
-  const categories = p.categories.map(resolveCategorySlug).filter((s) => ctx.catSlugs.has(s));
+  const categories = categoriesFor(p, ctx);
   const modelRefs = p.compatibleModels.filter((c) => ctx.modelSlugs.has(slugify(c)));
   const modelText = p.compatibleModels.filter((c) => !ctx.modelSlugs.has(slugify(c)));
   const description = htmlToBlocks(p.descriptionHtml, p.sku, ctx);
@@ -433,9 +447,13 @@ async function main() {
 
   // ── What already exists ────────────────────────────────────────────────────
   const [existingProducts, brands, cats, models] = await Promise.all([
-    client.fetch<{ _id: string; sku: string | null; slug: string | null; images: number }[]>(
+    client.fetch<
+      { _id: string; sku: string | null; slug: string | null; images: number; cats: number }[]
+    >(
       `*[_type=="product" && !(_id in path("drafts.**"))]{
-         _id, sku, "slug": slug.current, "images": coalesce(count(images), 0)
+         _id, sku, "slug": slug.current,
+         "images": coalesce(count(images), 0),
+         "cats": coalesce(count(categories), 0)
        }`,
     ),
     client.fetch<string[]>(`*[_type=="brand"].slug.current`),
@@ -548,7 +566,7 @@ async function main() {
   const quoteOnly = toCreate.filter((p) => p.shippingClass === "quote-only");
   console.log(`\nTO REVIEW after import`);
   console.log(`  no image          ${noImage.length}`);
-  console.log(`  no category       ${noCategory.length}  (won't appear on a category page)`);
+  console.log(`  no category       ${noCategory.length}  (filed under Uncategorised)`);
   console.log(
     `  £0.00 price       ${freePriced.length}` +
       (freePriced.length > 0
@@ -561,23 +579,34 @@ async function main() {
   // export has for them — almost always a transient fetch failure. Restricted
   // to documents whose id this script would have minted, so a seed product or
   // one Nigel has added photos to by hand is never rewritten.
-  const needImages = REPAIR_IMAGES
-    ? alreadyPresent.filter((p) => {
-        const doc = bySku.get(p.sku.toLowerCase())!;
-        return doc._id === `product-${slugify(p.sku)}` && doc.images < imageUrlsFor(p).length;
-      })
+  const mine = (p: WixProduct) =>
+    bySku.get(p.sku.toLowerCase())!._id === `product-${slugify(p.sku)}`;
+
+  const needImages = REPAIR
+    ? alreadyPresent.filter(
+        (p) => mine(p) && bySku.get(p.sku.toLowerCase())!.images < imageUrlsFor(p).length,
+      )
     : [];
-  if (REPAIR_IMAGES) {
-    console.log(`\nREPAIR — ${needImages.length} imported product(s) missing images`);
+  // Imported before the Uncategorised fallback existed, so still filed nowhere.
+  const needCategory = REPAIR
+    ? alreadyPresent.filter((p) => mine(p) && bySku.get(p.sku.toLowerCase())!.cats === 0)
+    : [];
+
+  if (REPAIR) {
+    console.log(`\nREPAIR`);
+    console.log(`  missing images     ${needImages.length}`);
     for (const p of needImages) {
       const doc = bySku.get(p.sku.toLowerCase())!;
       console.log(`     ${p.sku.padEnd(18)} has ${doc.images}, export has ${imageUrlsFor(p).length}`);
     }
+    console.log(`  no category        ${needCategory.length}`);
+    for (const p of needCategory) console.log(`     ${p.sku.padEnd(18)} ${p.name}`);
   }
 
   if (
     toCreate.length === 0 &&
     needImages.length === 0 &&
+    needCategory.length === 0 &&
     !(UPDATE_EXISTING && alreadyPresent.length > 0)
   ) {
     console.log(`\nNothing to write.\n`);
@@ -680,6 +709,18 @@ async function main() {
     repaired++;
   }
 
+  let refiled = 0;
+  for (const p of needCategory) {
+    const slugs = categoriesFor(p, ctx);
+    if (slugs.length === 0) continue;
+    await client
+      .patch(bySku.get(p.sku.toLowerCase())!._id)
+      .set({ categories: slugs.map((s) => ({ ...weakRef(`category-${s}`), _key: k() })) })
+      .commit();
+    console.log(`  refiled  ${p.sku.padEnd(18)} ${slugs.join(", ")}`);
+    refiled++;
+  }
+
   let patched = 0;
   if (UPDATE_EXISTING && alreadyPresent.length > 0) {
     console.log(`\nPATCHING ${alreadyPresent.length} existing products (price, stock, weight)`);
@@ -707,6 +748,7 @@ async function main() {
   console.log(`\nVERIFY`);
   console.log(`  created             ${created}`);
   if (repaired > 0) console.log(`  images repaired     ${repaired}`);
+  if (refiled > 0) console.log(`  refiled             ${refiled}`);
   if (patched > 0) console.log(`  patched             ${patched}`);
   console.log(`  images attached     ${[...assetsBySku.values()].flat().length}`);
   if (imageFailures.length > 0) console.log(`  image failures      ${imageFailures.length}`);
