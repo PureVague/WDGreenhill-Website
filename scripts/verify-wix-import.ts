@@ -165,6 +165,7 @@ async function main() {
   let markedSpans = 0;
   let imagesChecked = 0;
   let uncategorised = 0;
+  let featured = 0;
 
   for (const doc of docs) {
     const src = bySku.get(doc.sku)!;
@@ -175,8 +176,10 @@ async function main() {
     if (doc.stock !== src.stock) fail(`stock ${doc.stock} != ${src.stock}`);
     if (doc.weightGrams !== src.weightGrams) fail(`weight ${doc.weightGrams} != ${src.weightGrams}`);
     if (doc.shippingClass !== src.shippingClass) fail(`shippingClass ${doc.shippingClass}`);
-    if (doc.featured !== false) fail(`featured is ${doc.featured}`);
     if (!doc.slug) fail(`no slug`);
+    // `featured` is editorial, not imported — the importer sets it false and
+    // Nigel picks the homepage selection in Studio. Counted, never asserted.
+    if (doc.featured) featured++;
 
     // References: a null in a resolved array means the reference is dangling.
     if (doc.brand !== slugify(src.brand)) fail(`brand ${doc.brand} != ${slugify(src.brand)}`);
@@ -248,6 +251,7 @@ async function main() {
   console.log(`  images            ${imagesChecked} (all assets resolve)`);
   console.log(`  link annotations  ${linkAnnotations}`);
   console.log(`  styled spans      ${markedSpans}`);
+  if (featured > 0) console.log(`  featured          ${featured} (editorial, set in Studio)`);
   if (uncategorised > 0) {
     console.log(`  uncategorised     ${uncategorised} (unfiled in the export, filed under Uncategorised)`);
   }
