@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local editor / agent session config
 .claude/
+
+# Wix product import data — not committed, kept locally for reference
+wix-products-cleaned.json
