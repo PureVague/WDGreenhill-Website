@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { checkRateLimit, clientIp, rateLimitResponse } from "@/lib/email/rate-limit";
+import { EMAIL_ROUTES } from "@/lib/email/resend";
+import { sendEmail } from "@/lib/email/send";
+import { shippingQuoteEmail } from "@/lib/email/templates/shipping-quote";
 
 const lineItemSchema = z.object({
   sku: z.string(),
@@ -21,6 +25,9 @@ const quoteSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limit = checkRateLimit("shipping-quote-request", clientIp(request.headers));
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSeconds);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -36,38 +43,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { name, email, phone, country, postcode, instructions, items, totalWeightGrams, itemCount } =
-    parsed.data;
+  const { subject, html, text } = shippingQuoteEmail(parsed.data);
+  const sent = await sendEmail({
+    to: EMAIL_ROUTES.shippingQuote,
+    replyTo: parsed.data.email,
+    subject,
+    html,
+    text,
+  });
 
-  const totalKg = (totalWeightGrams / 1000).toFixed(2);
-  const subject = `Shipping quote required: ${name} — ${itemCount} item${itemCount !== 1 ? "s" : ""}, ${totalKg}kg`;
-
-  const textBody = [
-    `Name:     ${name}`,
-    `Email:    ${email}`,
-    phone ? `Phone:    ${phone}` : null,
-    `Country:  ${country}`,
-    `Postcode: ${postcode}`,
-    ``,
-    `Basket (${itemCount} items, ${totalKg}kg total):`,
-    ...items.map(
-      (i) => `  ${i.sku} · ${i.title} — ×${i.quantity} (${((i.weightGrams * i.quantity) / 1000).toFixed(2)}kg)`,
-    ),
-    ``,
-    instructions ? `Instructions:\n${instructions}` : "No special instructions.",
-  ]
-    .filter((l) => l !== null)
-    .join("\n");
-
-  // TODO: Plug in Resend or Nodemailer using EMAIL_PROVIDER env var.
-  // await resend.emails.send({
-  //   from:    process.env.EMAIL_FROM!,
-  //   to:      "sales@wdgreenhill.com",
-  //   replyTo: email,
-  //   subject,
-  //   text:    textBody,
-  // });
-  console.log("Shipping quote request:", { subject, body: textBody.slice(0, 400) });
-
+  if (!sent.ok) return Response.json({ ok: false, error: sent.error }, { status: 502 });
   return Response.json({ ok: true });
 }

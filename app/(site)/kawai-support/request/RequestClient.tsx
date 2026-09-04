@@ -26,18 +26,28 @@ type FormValues = z.infer<typeof schema>;
 
 export function RequestClient({ kawaiModels }: { kawaiModels: KawaiModel[] }) {
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormValues) => {
-    await fetch("/api/support-request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    setSubmitted(true);
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/support-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || json.ok === false) throw new Error(json.error ?? "Server error");
+      setSubmitted(true);
+    } catch {
+      setSubmitError(
+        "Something went wrong sending your request. Please try again, or email us directly at support@wdgreenhill.com.",
+      );
+    }
   };
 
   return (
@@ -153,6 +163,12 @@ export function RequestClient({ kawaiModels }: { kawaiModels: KawaiModel[] }) {
                 after submitting this form.
               </p>
             </div>
+
+            {submitError && (
+              <p role="alert" className="text-sm text-red-600">
+                {submitError}
+              </p>
+            )}
 
             <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Submitting…" : "Submit Support Request"}

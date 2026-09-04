@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { checkRateLimit, clientIp, rateLimitResponse } from "@/lib/email/rate-limit";
+import { EMAIL_ROUTES } from "@/lib/email/resend";
+import { sendEmail } from "@/lib/email/send";
+import { contactEmail } from "@/lib/email/templates/contact";
 
 const contactSchema = z.object({
   name: z.string().min(2).max(100),
@@ -11,26 +15,33 @@ const contactSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limit = checkRateLimit("contact", clientIp(request.headers));
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSeconds);
+
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+    return Response.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
 
   const parsed = contactSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: "Validation failed", details: parsed.error.format() }, { status: 422 });
+    return Response.json(
+      { ok: false, error: "Validation failed", details: parsed.error.format() },
+      { status: 422 },
+    );
   }
 
-  const { name, email, subject, message } = parsed.data;
+  const { subject, html, text } = contactEmail(parsed.data);
+  const sent = await sendEmail({
+    to: EMAIL_ROUTES.contact,
+    replyTo: parsed.data.email,
+    subject,
+    html,
+    text,
+  });
 
-  // TODO: Plug in Resend or Nodemailer using EMAIL_PROVIDER env var
-  console.log("Contact form submission:", { name, email, subject, message: message.slice(0, 100) });
-
-  // When EMAIL_PROVIDER=resend, use:
-  // const resend = new Resend(process.env.RESEND_API_KEY);
-  // await resend.emails.send({ from: process.env.EMAIL_FROM!, to: process.env.EMAIL_TO!, subject, html: `...` });
-
-  return Response.json({ success: true });
+  if (!sent.ok) return Response.json({ ok: false, error: sent.error }, { status: 502 });
+  return Response.json({ ok: true });
 }

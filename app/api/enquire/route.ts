@@ -1,6 +1,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getProductBySku } from "@/lib/sanity/data";
+import { checkRateLimit, clientIp, rateLimitResponse } from "@/lib/email/rate-limit";
+import { EMAIL_ROUTES } from "@/lib/email/resend";
+import { sendEmail } from "@/lib/email/send";
+import { enquireEmail } from "@/lib/email/templates/enquire";
 
 const enquireSchema = z.object({
   name:         z.string().min(2).max(100),
@@ -14,6 +18,9 @@ const enquireSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limit = checkRateLimit("enquire", clientIp(request.headers));
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSeconds);
+
   let body: unknown;
   try {
     body = await request.json();
@@ -31,37 +38,35 @@ export async function POST(request: NextRequest) {
 
   const { name, email, phone, quantity, message, sku, productTitle, productUrl } = parsed.data;
 
-  // Server-side: confirm SKU actually exists in the product catalogue
+  // Server-side: confirm SKU actually exists in the product catalogue, so a
+  // tampered client cannot raise an enquiry against a part we do not sell.
   const product = await getProductBySku(sku);
   if (!product) {
     return Response.json({ ok: false, error: "Unknown SKU" }, { status: 422 });
   }
 
-  const subject  = `Parts enquiry: ${productTitle} — ${name}`;
-  const textBody = [
-    `Name:     ${name}`,
-    `Email:    ${email}`,
-    phone ? `Phone:    ${phone}` : null,
-    `Quantity: ${quantity}`,
-    ``,
-    `SKU:      ${sku}`,
-    `Part:     ${productTitle}`,
-    `URL:      ${productUrl}`,
-    ``,
-    message ? `Message:\n${message}` : "No message provided.",
-  ].filter((l) => l !== null).join("\n");
+  // Prefer the catalogue's own title over the client's, and include live stock
+  // so Nigel can answer availability without looking it up.
+  const { subject, html, text } = enquireEmail({
+    name,
+    email,
+    phone,
+    quantity,
+    message,
+    sku,
+    productTitle: product.title || productTitle,
+    productUrl,
+    stock: product.stock,
+  });
 
-  // TODO: Plug in Resend or Nodemailer using EMAIL_PROVIDER env var
-  // When EMAIL_PROVIDER=resend, use:
-  // const resend = new Resend(process.env.RESEND_API_KEY);
-  // await resend.emails.send({
-  //   from:     process.env.EMAIL_FROM!,
-  //   to:       "sales@wdgreenhill.com",
-  //   replyTo:  email,
-  //   subject,
-  //   text:     textBody,
-  // });
-  console.log("Enquiry submission:", { subject, body: textBody.slice(0, 200) });
+  const sent = await sendEmail({
+    to: EMAIL_ROUTES.enquire,
+    replyTo: email,
+    subject,
+    html,
+    text,
+  });
 
+  if (!sent.ok) return Response.json({ ok: false, error: sent.error }, { status: 502 });
   return Response.json({ ok: true });
 }

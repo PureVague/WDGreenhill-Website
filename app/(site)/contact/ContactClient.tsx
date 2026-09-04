@@ -31,19 +31,29 @@ const CONTACT_EMAILS = [
 
 export function ContactClient() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormValues) => {
-    await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    setSubmitted(true);
-    reset();
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || json.ok === false) throw new Error(json.error ?? "Server error");
+      setSubmitted(true);
+      reset();
+    } catch {
+      setSubmitError(
+        "Something went wrong sending your message. Please try again, or email us directly at info@wdgreenhill.com.",
+      );
+    }
   };
 
   return (
@@ -190,6 +200,11 @@ export function ContactClient() {
                   <Textarea id="con-message" {...register("message")} rows={7} placeholder="Please include your model number and any relevant part numbers where applicable." />
                   {errors.message && <p className="text-xs text-red-500">{errors.message.message}</p>}
                 </div>
+                {submitError && (
+                  <p role="alert" className="text-sm text-red-600">
+                    {submitError}
+                  </p>
+                )}
                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? "Sending…" : "Send Message"}
                 </Button>

@@ -59,6 +59,7 @@ export function RepairRequestClient({ brands, kawaiModels }: RepairRequestClient
   const [submitted, setSubmitted] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const searchParams = useSearchParams();
 
   const {
@@ -96,17 +97,33 @@ export function RepairRequestClient({ brands, kawaiModels }: RepairRequestClient
   };
 
   const onSubmit = async (data: FormValues) => {
-    const payload = {
-      ...data,
-      brand: data.brand === "Other" ? (data.otherBrand ?? "Other") : data.brand,
-      fileCount: uploadedFiles.length,
-    };
-    await fetch("/api/repair-request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setSubmitted(true);
+    setSubmitError("");
+    // FormData rather than JSON so the photos/video actually reach us — asking
+    // someone to send a second email to finish their own repair request is
+    // friction at the worst possible moment.
+    const fd = new FormData();
+    fd.append("name", data.name);
+    fd.append("email", data.email);
+    fd.append("phone", data.phone);
+    fd.append("brand", data.brand === "Other" ? (data.otherBrand ?? "Other") : data.brand);
+    if (data.otherBrand) fd.append("otherBrand", data.otherBrand);
+    fd.append("model", data.model);
+    if (data.serialNumber) fd.append("serialNumber", data.serialNumber);
+    if (data.purchaseYear) fd.append("purchaseYear", data.purchaseYear);
+    fd.append("problemDescription", data.problemDescription);
+    fd.append("consent", String(data.consent));
+    uploadedFiles.forEach((f) => fd.append("files", f));
+
+    try {
+      const res = await fetch("/api/repair-request", { method: "POST", body: fd });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || json.ok === false) throw new Error(json.error ?? "Server error");
+      setSubmitted(true);
+    } catch {
+      setSubmitError(
+        "Something went wrong sending your request. Please try again, or email us directly at support@wdgreenhill.com.",
+      );
+    }
   };
 
   if (submitted) {
@@ -330,6 +347,12 @@ export function RepairRequestClient({ brands, kawaiModels }: RepairRequestClient
               {errors.consent && <p className="text-xs text-red-500 mt-1">{errors.consent.message}</p>}
             </div>
           </div>
+
+          {submitError && (
+            <p role="alert" className="text-sm text-red-600 text-center">
+              {submitError}
+            </p>
+          )}
 
           <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !!uploadError}>
             {isSubmitting ? "Submitting…" : "Submit Repair Request"}

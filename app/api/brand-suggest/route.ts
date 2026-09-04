@@ -1,8 +1,12 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { collectAttachments } from "@/lib/email/attachments";
+import { checkRateLimit, clientIp, rateLimitResponse } from "@/lib/email/rate-limit";
+import { EMAIL_ROUTES } from "@/lib/email/resend";
+import { sendEmail } from "@/lib/email/send";
+import { brandSuggestEmail } from "@/lib/email/templates/brand-suggest";
 
 const CURRENT_YEAR = new Date().getFullYear();
-const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB
 
 const bodySchema = z.object({
   name:        z.string().min(2).max(100),
@@ -15,6 +19,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limit = checkRateLimit("brand-suggest", clientIp(request.headers));
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterSeconds);
+
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -40,47 +47,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate files server-side
-  const fileEntries = formData.getAll("files");
-  const files       = fileEntries.filter((f): f is File => f instanceof File && f.size > 0);
-  const totalBytes  = files.reduce((sum, f) => sum + f.size, 0);
-  if (totalBytes > MAX_FILE_BYTES) {
-    return Response.json({ ok: false, error: "Total file size exceeds 25 MB" }, { status: 422 });
+  const collected = await collectAttachments(formData);
+  if (!collected.ok) {
+    return Response.json({ ok: false, error: collected.error }, { status: 422 });
   }
 
-  const { name, email, phone, brand, model, year, description } = parsed.data;
+  const { subject, html, text } = brandSuggestEmail({
+    ...parsed.data,
+    files: collected.files,
+  });
 
-  const subject  = `Brand enquiry: ${brand} — ${name}`;
-  const textBody = [
-    `Name:        ${name}`,
-    `Email:       ${email}`,
-    phone   ? `Phone:       ${phone}`  : null,
-    ``,
-    `Brand:       ${brand}`,
-    model   ? `Model:       ${model}`  : null,
-    year    ? `Year:        ${year}`   : null,
-    ``,
-    `Issue:\n${description}`,
-    files.length > 0
-      ? `\nAttachments: ${files.map((f) => `${f.name} (${(f.size / 1024).toFixed(0)} KB)`).join(", ")}`
-      : null,
-  ].filter((l) => l !== null).join("\n");
+  const sent = await sendEmail({
+    to: EMAIL_ROUTES.brandSuggest,
+    replyTo: parsed.data.email,
+    subject,
+    html,
+    text,
+    attachments: collected.attachments,
+  });
 
-  // TODO: Plug in Resend or Nodemailer using EMAIL_PROVIDER env var
-  // When EMAIL_PROVIDER=resend, use:
-  // const resend = new Resend(process.env.RESEND_API_KEY);
-  // await resend.emails.send({
-  //   from:        process.env.EMAIL_FROM!,
-  //   to:          "support@wdgreenhill.com",
-  //   replyTo:     email,
-  //   subject,
-  //   text:        textBody,
-  //   attachments: await Promise.all(files.map(async (f) => ({
-  //     filename: f.name,
-  //     content:  Buffer.from(await f.arrayBuffer()),
-  //   }))),
-  // });
-  console.log("Brand suggest submission:", { subject, body: textBody.slice(0, 300) });
-
+  if (!sent.ok) return Response.json({ ok: false, error: sent.error }, { status: 502 });
   return Response.json({ ok: true });
 }
