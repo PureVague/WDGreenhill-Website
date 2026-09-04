@@ -33,7 +33,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="font-display font-bold text-2xl text-[hsl(240,10%,4%)] mb-4">2. Data We Collect</h2>
-            <p>We collect personal data you provide when placing orders (name, email, address, phone), submitting contact or support forms, or signing up for our newsletter. We also collect standard server logs (IP address, browser type, pages visited) for security and analytics purposes.</p>
+            <p>We collect personal data you provide when placing orders (name, email, address, phone) or submitting contact or support forms. We also collect standard server logs (IP address, browser type, pages visited) for security and analytics purposes.</p>
           </section>
 
           <section>
@@ -41,7 +41,6 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-6 space-y-2">
               <li>To process and fulfil your orders</li>
               <li>To respond to enquiries and support requests</li>
-              <li>To send you newsletters if you have subscribed (you may unsubscribe at any time)</li>
               <li>To improve our website and services</li>
               <li>To comply with legal obligations</li>
             </ul>
@@ -49,7 +48,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="font-display font-bold text-2xl text-[hsl(240,10%,4%)] mb-4">4. Legal Basis</h2>
-            <p>We process your data on the basis of contract performance (order fulfilment), legitimate interests (improving our services), consent (newsletter), and legal obligation (tax records).</p>
+            <p>We process your data on the basis of contract performance (order fulfilment), legitimate interests (improving our services), and legal obligation (tax records).</p>
           </section>
 
           <section>
@@ -59,7 +58,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="font-display font-bold text-2xl text-[hsl(240,10%,4%)] mb-4">6. Data Retention</h2>
-            <p>Order data is retained for 7 years to comply with UK tax law. Newsletter subscriber data is retained until you unsubscribe. Contact form data is retained for 2 years.</p>
+            <p>Order data is retained for 7 years to comply with UK tax law. Contact form data is retained for 2 years.</p>
           </section>
 
           <section>
