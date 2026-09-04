@@ -9,7 +9,7 @@ import { PianoKeyboard } from "@/components/hero/piano-keyboard";
 import { AnimatedHeadline } from "@/components/motion/AnimatedHeadline";
 import { TiltCard } from "@/components/motion/TiltCard";
 import { MagneticWrapper } from "@/components/motion/MagneticWrapper";
-import { NewsletterForm } from "@/components/site/NewsletterForm";
+
 export const metadata: Metadata = {
   title: "Europe's Largest Digital Piano Parts Stockist | WD Greenhill & Co",
   description:
@@ -288,22 +288,6 @@ export default function HomePage() {
           </div>
           <p className="text-center text-xs text-[hsl(240,4%,60%)] mt-6">
             * Testimonials are representative of customer feedback. Names changed for privacy.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══ NEWSLETTER ═══ */}
-      <section className="py-20 px-6 bg-white" aria-label="Newsletter signup">
-        <div className="max-w-xl mx-auto text-center">
-          <SectionHeading
-            label="Stay informed"
-            title="New parts & manuals arrivals"
-            subtitle="We regularly add new old stock and newly sourced parts. Sign up to hear about additions relevant to your instruments."
-            align="center"
-          />
-          <NewsletterForm />
-          <p className="text-xs text-[hsl(240,4%,60%)] mt-3">
-            No spam. Unsubscribe at any time.
           </p>
         </div>
       </section>
